@@ -1,102 +1,172 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { motion } from 'framer-motion';
+import Image from 'next/image';
+import Link from 'next/link';
+import Navbar from '@/components/Navbar';
+
+export default function HomePage() {
+  const blobs = [
+    { name: 'Easy the Blob', img: '/images/easy-blob.png' },
+    { name: 'Shy Blob', img: '/images/shy-blob.png' },
+    { name: 'Chatter Blob', img: '/images/chatter-blob.png' },
+    { name: 'Wizard Blob', img: '/images/wizard-blob.png' },
+    { name: 'LOL Blob', img: '/images/lol-blob.png' },
+  ];
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div className="min-h-screen bg-gradient-to-b from-indigo-50 to-white text-gray-800 dark:bg-gray-900 dark:text-white transition-colors">
+      {/* Navbar */}
+      <Navbar />
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      {/* Hero Section */}
+      <section className="text-center pt-32 px-6 max-w-4xl mx-auto">
+        <motion.h1
+          className="text-5xl font-bold text-indigo-700 dark:text-indigo-300 mb-6"
+          initial={{ opacity: 0, y: -30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+        >
+          Practice Social Skills in a Safe Space
+        </motion.h1>
+        <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">
+          Build confidence at your own pace through guided, judgment-free scenarios.
+        </p>
+        <div className="flex justify-center gap-4">
+          <Link
+            href="/register"
+            className="bg-indigo-600 text-white px-6 py-3 rounded-xl shadow-md hover:bg-indigo-700 transition"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            Start Your Journey
+          </Link>
+          <Link
+            href="#how-it-works"
+            className="bg-gray-100 text-indigo-700 px-6 py-3 rounded-xl border hover:bg-gray-200 dark:bg-gray-700 dark:text-white transition"
           >
-            Read our docs
-          </a>
+            Learn How It Works
+          </Link>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+      </section>
+
+      {/* How It Works */}
+      <section id="how-it-works" className="py-20 px-6 max-w-6xl mx-auto">
+        <h2 className="text-3xl font-semibold text-center mb-12 text-indigo-700 dark:text-indigo-300">
+          How It Works
+        </h2>
+        <div className="grid md:grid-cols-3 gap-8 text-center">
+          {[
+            {
+              title: 'Pick a Scenario',
+              desc: 'Choose real-life social situations to practice safely.',
+              img: '/images/scenario-icon.png',
+            },
+            {
+              title: 'Reflect & Improve',
+              desc: 'Get instant feedback and tips to build confidence.',
+              img: '/images/reflect-icon.png',
+            },
+            {
+              title: 'Track Progress',
+              desc: 'Celebrate small wins and unlock achievements.',
+              img: '/images/progress-icon.png',
+            },
+          ].map((step, i) => (
+            <motion.div
+              key={i}
+              className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow hover:shadow-lg transition"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.2 }}
+            >
+              <Image
+                src={step.img}
+                alt={step.title}
+                width={80}
+                height={80}
+                className="mx-auto mb-4"
+              />
+              <h3 className="text-xl font-bold mb-2">{step.title}</h3>
+              <p className="text-gray-600 dark:text-gray-300">{step.desc}</p>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* Why It Helps */}
+      <section className="py-20 px-6 bg-indigo-50 dark:bg-gray-800 text-center">
+        <h2 className="text-3xl font-semibold mb-6 text-indigo-700 dark:text-indigo-300">
+          Why SocialEase Works
+        </h2>
+        <p className="max-w-3xl mx-auto text-lg text-gray-700 dark:text-gray-300">
+          Our approach combines evidence-based Cognitive Behavioral Therapy (CBT) techniques with fun gamification elements.
+          You practice scenarios gradually, track your progress, and build confidence one step at a time—all in a safe, supportive environment.
+        </p>
+      </section>
+
+      {/* Progress Preview */}
+      <section className="py-16 px-6 max-w-4xl mx-auto text-center">
+        <h2 className="text-3xl font-semibold mb-6 text-indigo-700 dark:text-indigo-300">
+          See Your Progress
+        </h2>
+        <motion.div
+          className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col items-center"
+          initial={{ opacity: 0, scale: 0.9 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+          <p className="text-xl font-semibold mb-4">Level 3 – Confident Speaker 🎯</p>
+          <div className="w-full bg-gray-200 dark:bg-gray-700 h-4 rounded-full mb-4">
+            <div className="bg-indigo-600 h-4 rounded-full" style={{ width: '60%' }}></div>
+          </div>
+          <p className="text-gray-600 dark:text-gray-300">1200 XP earned • Next badge in 200 XP</p>
+        </motion.div>
+      </section>
+
+      {/* Companions Section (Blobs) */}
+      <section className="py-16 px-6 max-w-5xl mx-auto text-center">
+        <h2 className="text-3xl font-semibold mb-6 text-indigo-700 dark:text-indigo-300">
+          Meet Your Friendly Companions
+        </h2>
+        <p className="text-gray-600 dark:text-gray-300 mb-8">
+          Blobs are here to cheer you on and keep you motivated as you progress!
+        </p>
+        <div className="flex flex-wrap justify-center gap-8">
+          {blobs.map((blob, index) => (
+            <motion.div
+              key={index}
+              className="flex flex-col items-center"
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1 }}
+              animate={{ y: [0, -10, 0] }}
+              transition={{
+                delay: index * 0.2,
+                duration: 3,
+                repeat: Infinity,
+                repeatType: 'reverse',
+              }}
+              whileHover={{ scale: 1.15, rotate: 5 }}
+            >
+              <Image
+                src={blob.img}
+                alt={blob.name}
+                width={100}
+                height={100}
+                className="rounded-full"
+              />
+              <p className="mt-2 text-sm font-medium">{blob.name}</p>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="mt-16 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+        © 2025 SocialEase | <Link href="/privacy" className="underline">Privacy</Link>
+        <div className="mt-2">
+          <a href="https://www.nhs.uk/mental-health/" target="_blank" className="underline">NHS Mental Health</a> | 
+          <a href="https://www.samaritans.org/" target="_blank" className="underline"> Samaritans</a>
+        </div>
+        <p className="mt-2 text-xs">SocialEase is not a substitute for professional therapy.</p>
       </footer>
     </div>
   );
