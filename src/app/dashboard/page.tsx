@@ -1,28 +1,44 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import api from '@/utils/api';
 import Image from 'next/image';
 import Link from 'next/link';
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [dashboard, setDashboard] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  // ✅ Check for token on page load
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/login'); // No token? Go to login page
+    }
+  }, [router]);
+
+  // ✅ Fetch dashboard data from backend
   useEffect(() => {
     const fetchDashboard = async () => {
-      try {
-        const res = await api.get('/user/dashboard'); // ✅ Backend endpoint
-        setDashboard(res.data.data);
-      } catch (err) {
-        console.error('Failed to load dashboard:', err);
-      } finally {
-        setLoading(false);
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const res = await api.get('/user/dashboard', {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          setDashboard(res.data.data);
+        } catch (err) {
+          console.error('Failed to load dashboard:', err);
+          router.push('/login'); // Token invalid or expired
+        }
       }
+      setLoading(false);
     };
 
     fetchDashboard();
-  }, []);
+  }, [router]);
 
   if (loading) {
     return <p className="text-center mt-10 text-gray-500">Loading your dashboard...</p>;
@@ -37,16 +53,15 @@ export default function DashboardPage() {
     stats = { xp: 0, level: 1, streak: 0, badges: [], nextLevelXP: 1000 },
     progress = { completedScenariosCount: 0, recentScenarios: [] },
     messages = [],
-    goals = [] // ✅ Include goals from API
+    goals = [],
   } = dashboard;
 
-  // ✅ Safe avatar handling
+  const displayName = user.name || 'User';
   const avatarSrc =
-    user?.avatar && user.avatar.trim() !== '' && user.avatar.startsWith('http')
+    user.avatar && user.avatar.startsWith('http')
       ? user.avatar
       : '/images/default-avatar.png';
 
-  // ✅ XP Progress calculation
   const progressPercentage =
     stats.nextLevelXP && stats.nextLevelXP > 0
       ? Math.min((stats.xp / stats.nextLevelXP) * 100, 100)
@@ -58,13 +73,12 @@ export default function DashboardPage() {
       <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-6">
         <div className="text-center md:text-left">
           <h1 className="text-3xl md:text-4xl font-bold text-indigo-700 dark:text-white">
-            Welcome back, {user.name || 'User'}!
+            Welcome back, {displayName}!
           </h1>
           <p className="text-gray-600 dark:text-gray-300 text-lg mt-2">
             Here’s your progress summary.
           </p>
         </div>
-        {/* ✅ Clickable Avatar */}
         <Link href="/profile" title="Click to update your avatar">
           <Image
             src={avatarSrc}
@@ -149,7 +163,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Goals Widget */}
+      {/* Goals */}
       <div className="bg-white dark:bg-gray-700 p-6 rounded-xl shadow mb-8">
         <h2 className="text-xl font-semibold mb-4 text-purple-600 dark:text-purple-300">
           Your Goals

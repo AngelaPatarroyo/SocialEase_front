@@ -1,38 +1,53 @@
 'use client';
 
-import { useState } from 'react';
-import { useAuth } from '@/context/AuthContext';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff } from 'lucide-react';
-import { signIn } from 'next-auth/react'; //  Google login
+import api from '@/utils/api';
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
+
+  useEffect(() => {
+    if (localStorage.getItem('token')) {
+      router.push('/dashboard'); // Redirect if already logged in
+    }
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+
     try {
-      await login(email, password);
+      const res = await api.post('/auth/login', { email, password });
+      const { token, user } = res.data;
+
+      // Save token & user data locally
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+
       router.push('/dashboard');
     } catch (err: any) {
-      const message =
-        err.response?.data?.message || 'Invalid credentials. Please try again.';
+      const message = err.response?.data?.message || 'Invalid credentials. Please try again.';
       setError(message);
     } finally {
       setLoading(false);
     }
   };
+
+  const handleGoogleLogin = () => {
+    window.location.href = `${process.env.NEXT_PUBLIC_API_BASE}/auth/google?mode=login`;
+  };
+  
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-white px-4">
@@ -40,10 +55,16 @@ export default function LoginPage() {
 
         {/* Logo */}
         <div className="flex justify-center mb-6">
-          <Image src="/images/actualogo.png" alt="SocialEase Logo" width={140} height={140} priority />
+          <Image
+            src="/images/actualogo.png"
+            alt="SocialEase Logo"
+            width={140}
+            height={140}
+            priority
+          />
         </div>
 
-        {/* Bubble + Mascot */}
+        {/* Mascot + Bubble */}
         <div className="flex flex-col items-center mb-4">
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -54,15 +75,25 @@ export default function LoginPage() {
             Hi there! <br /> Ready to start?
             <div className="absolute left-1/2 transform -translate-x-1/2 top-full w-4 h-4 bg-white border-l border-b border-gray-200 rotate-45"></div>
           </motion.div>
-          <motion.div initial={{ y: 0 }} animate={{ y: [-8, 0] }} transition={{ duration: 1.5, ease: 'easeOut' }}>
-            <Image src="/images/mascot.png" alt="Mascot" width={200} height={200} className="drop-shadow-xl" />
+          <motion.div
+            initial={{ y: 0 }}
+            animate={{ y: [-8, 0] }}
+            transition={{ duration: 1.5, ease: 'easeOut', repeat: Infinity }}
+          >
+            <Image
+              src="/images/mascot.png"
+              alt="Mascot"
+              width={200}
+              height={200}
+              className="drop-shadow-xl"
+            />
           </motion.div>
         </div>
 
         <p className="text-gray-500 text-base mb-6">Take a deep breath and sign in at your own pace.</p>
         {error && <p className="text-red-500 mb-3 text-sm">{error}</p>}
 
-        {/* Form */}
+        {/* Email & Password Login */}
         <form onSubmit={handleSubmit} className="space-y-4 md:space-y-5">
           <input
             type="email"
@@ -109,7 +140,7 @@ export default function LoginPage() {
 
         {/*  Google Login Button */}
         <button
-          onClick={() => signIn('google', { callbackUrl: '/dashboard' })}
+          onClick={handleGoogleLogin}
           className="w-full flex items-center justify-center gap-3 border border-gray-300 rounded-lg py-3 font-semibold hover:bg-gray-50 transition"
         >
           <Image src="/images/google-icon.png" alt="Google" width={20} height={20} />
@@ -118,7 +149,9 @@ export default function LoginPage() {
 
         <p className="text-sm text-gray-500 mt-6">
           Don’t have an account?{' '}
-          <Link href="/register" className="text-blue-500 font-semibold hover:underline">Sign up</Link>
+          <Link href="/register" className="text-blue-500 font-semibold hover:underline">
+            Sign up
+          </Link>
         </p>
       </div>
     </div>

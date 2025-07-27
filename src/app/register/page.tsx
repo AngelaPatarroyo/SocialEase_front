@@ -1,39 +1,36 @@
 'use client';
 
-import { useState } from 'react';
-import { useAuth } from '@/context/AuthContext';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { Eye, EyeOff } from 'lucide-react';
-import { signIn } from 'next-auth/react';
+import api from '@/utils/api';
 
 export default function RegisterPage() {
-  const { register } = useAuth();
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  // ✅ Redirect if already logged in
+  useEffect(() => {
+    if (localStorage.getItem('token')) {
+      router.push('/dashboard');
+    }
+  }, [router]);
+
+  // ✅ Formik setup for validation
   const formik = useFormik({
-    initialValues: {
-      name: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
-    },
+    initialValues: { name: '', email: '', password: '', confirmPassword: '' },
     validationSchema: Yup.object({
-      name: Yup.string()
-        .min(2, 'Name must be at least 2 characters')
-        .required('Name is required'),
-      email: Yup.string()
-        .email('Invalid email address')
-        .required('Email is required'),
-      password: Yup.string()
-        .min(6, 'Password must be at least 6 characters')
-        .required('Password is required'),
+      name: Yup.string().min(2, 'Name must be at least 2 characters').required('Name is required'),
+      email: Yup.string().email('Invalid email address').required('Email is required'),
+      password: Yup.string().min(6, 'Password must be at least 6 characters').required('Password is required'),
       confirmPassword: Yup.string()
         .oneOf([Yup.ref('password')], 'Passwords must match')
         .required('Please confirm your password'),
@@ -42,15 +39,25 @@ export default function RegisterPage() {
       setLoading(true);
       setMessage(null);
       try {
-        await register(values.name, values.email, values.password);
-        setMessage('✅ Account created successfully! You can log in now.');
-      } catch {
-        setMessage('❌ Something went wrong. Try again.');
+        await api.post('/auth/register', {
+          name: values.name,
+          email: values.email,
+          password: values.password,
+        });
+        setMessage('✅ Account created successfully! Please log in.');
+      } catch (err: any) {
+        setMessage(err.response?.data?.message || '❌ Something went wrong.');
       } finally {
         setLoading(false);
       }
     },
   });
+
+  // Redirect to backend Google OAuth (mode = signup)
+  const handleGoogleSignUp = () => {
+    window.location.href = `${process.env.NEXT_PUBLIC_API_BASE}/auth/google?mode=register`;
+  };
+  
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-purple-50 via-pink-50 to-white px-4">
@@ -75,7 +82,7 @@ export default function RegisterPage() {
           <motion.div
             initial={{ y: 0 }}
             animate={{ y: [-8, 0] }}
-            transition={{ duration: 1.5, ease: 'easeOut' }}
+            transition={{ duration: 1.5, ease: 'easeOut', repeat: Infinity }}
             className="relative w-28 h-28 md:w-36 md:h-36 mt-6"
           >
             <Image src="/images/shy-blob.png" alt="Shy Blob" width={180} height={180} className="drop-shadow-xl" />
@@ -96,7 +103,6 @@ export default function RegisterPage() {
 
         {/* Registration Form */}
         <form onSubmit={formik.handleSubmit} className="space-y-4 md:space-y-5">
-          {/* Name */}
           <input
             name="name"
             type="text"
@@ -111,7 +117,6 @@ export default function RegisterPage() {
             <p className="text-red-500 text-xs">{formik.errors.name}</p>
           )}
 
-          {/* Email */}
           <input
             name="email"
             type="email"
@@ -174,7 +179,6 @@ export default function RegisterPage() {
             <p className="text-red-500 text-xs">{formik.errors.confirmPassword}</p>
           )}
 
-          {/* Submit Button */}
           <button
             type="submit"
             disabled={loading}
@@ -193,14 +197,13 @@ export default function RegisterPage() {
 
         {/* ✅ Google Sign-Up Button */}
         <button
-          onClick={() => signIn('google', { callbackUrl: '/dashboard' })}
+          onClick={handleGoogleSignUp}
           className="w-full flex items-center justify-center gap-3 border border-gray-300 rounded-lg py-3 font-semibold hover:bg-gray-50 transition"
         >
           <Image src="/images/google-icon.png" alt="Google" width={20} height={20} />
           Sign up with Google
         </button>
 
-        {/* Footer */}
         <p className="text-sm text-gray-500 mt-8">
           Already have an account?{' '}
           <Link href="/login" className="text-purple-500 font-semibold hover:underline">

@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import api from '@/utils/api';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { UploadCloud } from 'lucide-react';
 
 export default function ProfilePage() {
   const { user, token, logout } = useAuth();
@@ -43,6 +44,7 @@ export default function ProfilePage() {
     try {
       let avatarUrl = avatar;
 
+      // ✅ If new avatar selected, upload to backend (Cloudinary)
       if (customAvatar) {
         const formData = new FormData();
         formData.append('file', customAvatar);
@@ -50,13 +52,15 @@ export default function ProfilePage() {
         const uploadRes = await api.post('/upload/avatar', formData, {
           headers: {
             Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data'
-          }
+            'Content-Type': 'multipart/form-data',
+          },
         });
 
-        avatarUrl = uploadRes.data.url;
+        avatarUrl = uploadRes.data.url; // ✅ Cloudinary URL
+        setAvatar(avatarUrl); // ✅ Update preview
       }
 
+      // ✅ Save profile details
       await api.put(
         '/user/profile',
         { name, avatar: avatarUrl, theme },
@@ -67,7 +71,7 @@ export default function ProfilePage() {
     } catch (err: any) {
       setMessage({
         type: 'error',
-        text: err.response?.data?.message || 'Failed to update profile.'
+        text: err.response?.data?.message || 'Failed to update profile.',
       });
     } finally {
       setLoading(false);
@@ -94,19 +98,21 @@ export default function ProfilePage() {
     } catch (err: any) {
       setMessage({
         type: 'error',
-        text: err.response?.data?.message || 'Failed to update password'
+        text: err.response?.data?.message || 'Failed to update password',
       });
     }
   };
 
   const handleLogout = () => {
     logout();
-    router.push('/login'); // Redirect after logout
+    router.push('/login');
   };
 
   const displayAvatar = customAvatar
     ? URL.createObjectURL(customAvatar)
-    : `/images/${avatar}`;
+    : avatar.startsWith('http') // Google or Cloudinary
+    ? avatar
+    : `/images/${avatar || 'default-avatar.png'}`;
 
   return (
     <div className="p-8 min-h-screen bg-gradient-to-br from-purple-50 to-white flex flex-col items-center">
@@ -127,17 +133,35 @@ export default function ProfilePage() {
         <div className="flex flex-col items-center mb-6">
           <Image
             src={displayAvatar}
-            alt="Selected Avatar"
-            width={100}
-            height={100}
-            className="rounded-full border-4 border-purple-500 mb-4"
+            alt="User Avatar"
+            width={120}
+            height={120}
+            className="rounded-full border-4 border-purple-500 mb-4 object-cover shadow-lg"
           />
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleAvatarUpload}
-            className="mb-4"
-          />
+
+          {/* Modern Upload Button */}
+          <div className="relative text-center">
+            <input
+              id="avatar-upload"
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarUpload}
+              className="hidden"
+            />
+            <label
+              htmlFor="avatar-upload"
+              className="inline-flex items-center gap-2 cursor-pointer bg-purple-600 text-white px-5 py-2 rounded-lg font-semibold shadow hover:bg-purple-700 transition"
+            >
+              <UploadCloud size={18} />
+              Change Avatar
+            </label>
+
+            {customAvatar && (
+              <p className="text-sm text-gray-600 mt-2">
+                Selected: <span className="font-medium">{customAvatar.name}</span>
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Name */}
@@ -217,6 +241,7 @@ export default function ProfilePage() {
           </button>
         </div>
 
+        {/* Logout */}
         <button
           onClick={handleLogout}
           className="w-full mt-6 py-3 rounded-lg bg-red-500 hover:bg-red-600 text-white font-semibold"
