@@ -6,6 +6,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff } from 'lucide-react';
+import Swal from 'sweetalert2';
 import api from '@/utils/api';
 
 export default function LoginPage() {
@@ -13,32 +14,71 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [mascotPaused, setMascotPaused] = useState(false);
+
+  const showAlert = (options: any) => {
+    setMascotPaused(true);
+    Swal.fire(options).then(() => setMascotPaused(false));
+  };
 
   useEffect(() => {
     if (localStorage.getItem('token')) {
-      router.push('/dashboard'); // Redirect if already logged in
+      router.push('/dashboard');
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const errorParam = params.get('error');
+
+    if (errorParam === 'unregistered') {
+      showAlert({
+        icon: 'error',
+        title: 'Account not registered',
+        text: 'This Google account is not registered. Please sign up first.',
+      });
+    } else if (errorParam === 'server') {
+      showAlert({
+        icon: 'error',
+        title: 'Login failed',
+        text: 'There was a problem with Google login. Please try again.',
+      });
+    } else if (errorParam === 'No account found') {
+      showAlert({
+        icon: 'warning',
+        title: 'No account found',
+        text: 'Please sign up first or try a different email address.',
+      });
     }
   }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
 
     try {
       const res = await api.post('/auth/login', { email, password });
       const { token, user } = res.data;
 
-      // Save token & user data locally
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
 
-      router.push('/dashboard');
+      showAlert({
+        icon: 'success',
+        title: 'Welcome back!',
+        text: `Glad to see you again, ${user.name.split(' ')[0]}!`,
+        timer: 1800,
+        showConfirmButton: false,
+      });
+
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 1800);
     } catch (err: any) {
-      const message = err.response?.data?.message || 'Invalid credentials. Please try again.';
-      setError(message);
+      showAlert({
+        icon: 'error',
+        title: 'Invalid credentials',
+        text: 'Please try again.',
+      });
     } finally {
       setLoading(false);
     }
@@ -47,7 +87,6 @@ export default function LoginPage() {
   const handleGoogleLogin = () => {
     window.location.href = `${process.env.NEXT_PUBLIC_API_BASE}/auth/google?mode=login`;
   };
-  
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-white px-4">
@@ -76,9 +115,9 @@ export default function LoginPage() {
             <div className="absolute left-1/2 transform -translate-x-1/2 top-full w-4 h-4 bg-white border-l border-b border-gray-200 rotate-45"></div>
           </motion.div>
           <motion.div
-            initial={{ y: 0 }}
-            animate={{ y: [-8, 0] }}
-            transition={{ duration: 1.5, ease: 'easeOut', repeat: Infinity }}
+            initial={{ y: -8 }}
+            animate={{ y: 0 }}
+            transition={{ duration: 1.2, ease: 'easeOut' }}
           >
             <Image
               src="/images/mascot.png"
@@ -91,7 +130,6 @@ export default function LoginPage() {
         </div>
 
         <p className="text-gray-500 text-base mb-6">Take a deep breath and sign in at your own pace.</p>
-        {error && <p className="text-red-500 mb-3 text-sm">{error}</p>}
 
         {/* Email & Password Login */}
         <form onSubmit={handleSubmit} className="space-y-4 md:space-y-5">
@@ -138,7 +176,7 @@ export default function LoginPage() {
           <hr className="flex-grow border-gray-300" />
         </div>
 
-        {/*  Google Login Button */}
+        {/* Google Login */}
         <button
           onClick={handleGoogleLogin}
           className="w-full flex items-center justify-center gap-3 border border-gray-300 rounded-lg py-3 font-semibold hover:bg-gray-50 transition"

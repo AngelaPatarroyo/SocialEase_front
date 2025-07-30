@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import api from '@/utils/api';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { UploadCloud } from 'lucide-react';
+import { UploadCloud, Eye, EyeOff } from 'lucide-react';
 
 export default function ProfilePage() {
   const { user, token, logout } = useAuth();
@@ -19,6 +19,10 @@ export default function ProfilePage() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -44,23 +48,31 @@ export default function ProfilePage() {
     try {
       let avatarUrl = avatar;
 
-      // ✅ If new avatar selected, upload to backend (Cloudinary)
       if (customAvatar) {
+        const { data: sig } = await api.get('/cloudinary/signature');
+
         const formData = new FormData();
         formData.append('file', customAvatar);
+        formData.append('api_key', process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY!);
+        formData.append('timestamp', sig.timestamp);
+        formData.append('signature', sig.signature);
+        formData.append('folder', sig.folder);
 
-        const uploadRes = await api.post('/upload/avatar', formData, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data',
-          },
-        });
+        const cloudRes = await fetch(
+          `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+          {
+            method: 'POST',
+            body: formData,
+          }
+        );
 
-        avatarUrl = uploadRes.data.url; // ✅ Cloudinary URL
-        setAvatar(avatarUrl); // ✅ Update preview
+        const cloudData = await cloudRes.json();
+        if (!cloudRes.ok) throw new Error(cloudData.error?.message || 'Cloudinary upload failed');
+
+        avatarUrl = cloudData.secure_url;
+        setAvatar(avatarUrl);
       }
 
-      // ✅ Save profile details
       await api.put(
         '/user/profile',
         { name, avatar: avatarUrl, theme },
@@ -71,7 +83,7 @@ export default function ProfilePage() {
     } catch (err: any) {
       setMessage({
         type: 'error',
-        text: err.response?.data?.message || 'Failed to update profile.',
+        text: err.message || 'Failed to update profile.',
       });
     } finally {
       setLoading(false);
@@ -110,7 +122,7 @@ export default function ProfilePage() {
 
   const displayAvatar = customAvatar
     ? URL.createObjectURL(customAvatar)
-    : avatar.startsWith('http') // Google or Cloudinary
+    : avatar.startsWith('http')
     ? avatar
     : `/images/${avatar || 'default-avatar.png'}`;
 
@@ -129,7 +141,7 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* Profile Avatar */}
+        {/* Avatar */}
         <div className="flex flex-col items-center mb-6">
           <Image
             src={displayAvatar}
@@ -138,8 +150,6 @@ export default function ProfilePage() {
             height={120}
             className="rounded-full border-4 border-purple-500 mb-4 object-cover shadow-lg"
           />
-
-          {/* Modern Upload Button */}
           <div className="relative text-center">
             <input
               id="avatar-upload"
@@ -155,7 +165,6 @@ export default function ProfilePage() {
               <UploadCloud size={18} />
               Change Avatar
             </label>
-
             {customAvatar && (
               <p className="text-sm text-gray-600 mt-2">
                 Selected: <span className="font-medium">{customAvatar.name}</span>
@@ -171,7 +180,7 @@ export default function ProfilePage() {
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300"
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-300"
           />
         </div>
 
@@ -192,47 +201,51 @@ export default function ProfilePage() {
           <select
             value={theme}
             onChange={(e) => setTheme(e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300"
+            className="w-full p-3 border border-gray-300 rounded-lg"
           >
             <option value="light">Light</option>
             <option value="dark">Dark</option>
           </select>
         </div>
 
+        {/* Save Changes */}
         <button
           onClick={handleSave}
           disabled={loading}
-          className={`w-full py-3 rounded-lg text-white font-semibold shadow-md transition ${
-            loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700'
+          className={`w-full py-3 rounded-lg text-white font-semibold transition ${
+            loading ? 'bg-gray-400' : 'bg-purple-600 hover:bg-purple-700'
           }`}
         >
           {loading ? 'Saving...' : 'Save Changes'}
         </button>
 
-        {/* Password Update Section */}
+        {/* Password Update */}
         <div className="mt-8 border-t pt-6">
           <h2 className="text-xl font-semibold mb-4 text-purple-700">Update Password</h2>
-          <input
-            type="password"
-            placeholder="Current Password"
-            value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg mb-3"
-          />
-          <input
-            type="password"
-            placeholder="New Password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg mb-3"
-          />
-          <input
-            type="password"
-            placeholder="Confirm New Password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg mb-3"
-          />
+
+          {[
+            { value: currentPassword, setter: setCurrentPassword, label: 'Current', toggle: showCurrentPassword, setToggle: setShowCurrentPassword },
+            { value: newPassword, setter: setNewPassword, label: 'New', toggle: showNewPassword, setToggle: setShowNewPassword },
+            { value: confirmPassword, setter: setConfirmPassword, label: 'Confirm New', toggle: showConfirmPassword, setToggle: setShowConfirmPassword }
+          ].map(({ value, setter, label, toggle, setToggle }, i) => (
+            <div key={i} className="relative mb-3">
+              <input
+                type={toggle ? 'text' : 'password'}
+                placeholder={`${label} Password`}
+                value={value}
+                onChange={(e) => setter(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setToggle(!toggle)}
+                className="absolute inset-y-0 right-3 flex items-center text-gray-500"
+              >
+                {toggle ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
+          ))}
+
           <button
             onClick={handlePasswordUpdate}
             className="bg-purple-600 text-white w-full py-2 rounded-lg hover:bg-purple-700"

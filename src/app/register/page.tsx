@@ -8,56 +8,78 @@ import { motion } from 'framer-motion';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { Eye, EyeOff } from 'lucide-react';
+import Swal from 'sweetalert2';
 import api from '@/utils/api';
 
 export default function RegisterPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [mascotPaused, setMascotPaused] = useState(false);
 
-  // ✅ Redirect if already logged in
+  const showAlert = (options: any) => {
+    setMascotPaused(true);
+    Swal.fire(options).then(() => setMascotPaused(false));
+  };
+
   useEffect(() => {
     if (localStorage.getItem('token')) {
       router.push('/dashboard');
     }
   }, [router]);
 
-  // ✅ Formik setup for validation
   const formik = useFormik({
     initialValues: { name: '', email: '', password: '', confirmPassword: '' },
     validationSchema: Yup.object({
-      name: Yup.string().min(2, 'Name must be at least 2 characters').required('Name is required'),
-      email: Yup.string().email('Invalid email address').required('Email is required'),
-      password: Yup.string().min(6, 'Password must be at least 6 characters').required('Password is required'),
+      name: Yup.string()
+        .matches(/^[a-zA-Z\s]*$/, 'Name can only contain letters and spaces')
+        .min(2, 'Name must be at least 2 characters')
+        .required('Name is required'),
+      email: Yup.string()
+        .email('Invalid email address')
+        .matches(/.+@.+\.(com|co\.uk)$/, 'Email must end in .com or .co.uk')
+        .required('Email is required'),
+      password: Yup.string()
+        .min(8, 'Password must be at least 8 characters')
+        .matches(/[a-z]/, 'Must include lowercase')
+        .matches(/[A-Z]/, 'Must include uppercase')
+        .matches(/\d/, 'Must include a number')
+        .matches(/[@$!%*?&]/, 'Must include a symbol')
+        .required('Password is required'),
       confirmPassword: Yup.string()
         .oneOf([Yup.ref('password')], 'Passwords must match')
         .required('Please confirm your password'),
     }),
     onSubmit: async (values) => {
       setLoading(true);
-      setMessage(null);
       try {
         await api.post('/auth/register', {
           name: values.name,
           email: values.email,
           password: values.password,
         });
-        setMessage('✅ Account created successfully! Please log in.');
+        showAlert({
+          icon: 'success',
+          title: 'Account created!',
+          text: 'You can now log in to your new account.',
+        });
+        formik.resetForm();
       } catch (err: any) {
-        setMessage(err.response?.data?.message || '❌ Something went wrong.');
+        showAlert({
+          icon: 'error',
+          title: 'Registration failed',
+          text: err.response?.data?.message || 'Something went wrong.',
+        });
       } finally {
         setLoading(false);
       }
     },
   });
 
-  // Redirect to backend Google OAuth (mode = signup)
   const handleGoogleSignUp = () => {
     window.location.href = `${process.env.NEXT_PUBLIC_API_BASE}/auth/google?mode=register`;
   };
-  
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-purple-50 via-pink-50 to-white px-4">
@@ -80,29 +102,21 @@ export default function RegisterPage() {
             <div className="absolute left-1/2 transform -translate-x-1/2 top-full w-4 h-4 bg-white border-l border-b border-gray-200 rotate-45"></div>
           </motion.div>
           <motion.div
-            initial={{ y: 0 }}
-            animate={{ y: [-8, 0] }}
-            transition={{ duration: 1.5, ease: 'easeOut', repeat: Infinity }}
+            initial={{ y: -8 }}
+            animate={{ y: 0 }}
+            transition={{ duration: 1.2, ease: 'easeOut' }}
             className="relative w-28 h-28 md:w-36 md:h-36 mt-6"
           >
             <Image src="/images/shy-blob.png" alt="Shy Blob" width={180} height={180} className="drop-shadow-xl" />
           </motion.div>
         </div>
 
-        {/* Subtitle */}
         <p className="text-gray-500 text-base mb-6">
           Join SocialEase and start your journey to confident conversations.
         </p>
 
-        {/* Success / Error Message */}
-        {message && (
-          <p className={`font-medium text-sm mb-4 ${message.includes('successfully') ? 'text-green-600' : 'text-red-500'}`}>
-            {message}
-          </p>
-        )}
-
-        {/* Registration Form */}
         <form onSubmit={formik.handleSubmit} className="space-y-4 md:space-y-5">
+
           <input
             name="name"
             type="text"
@@ -131,7 +145,6 @@ export default function RegisterPage() {
             <p className="text-red-500 text-xs">{formik.errors.email}</p>
           )}
 
-          {/* Password */}
           <div className="relative">
             <input
               name="password"
@@ -155,7 +168,6 @@ export default function RegisterPage() {
             <p className="text-red-500 text-xs">{formik.errors.password}</p>
           )}
 
-          {/* Confirm Password */}
           <div className="relative">
             <input
               name="confirmPassword"
@@ -195,7 +207,7 @@ export default function RegisterPage() {
           <hr className="flex-grow border-gray-300" />
         </div>
 
-        {/* ✅ Google Sign-Up Button */}
+        {/* Google Register */}
         <button
           onClick={handleGoogleSignUp}
           className="w-full flex items-center justify-center gap-3 border border-gray-300 rounded-lg py-3 font-semibold hover:bg-gray-50 transition"

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -8,11 +8,22 @@ export default function Navbar() {
   const [darkMode, setDarkMode] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-    if (typeof document !== 'undefined') {
-      document.documentElement.classList.toggle('dark');
+  // Load dark mode preference on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedTheme = localStorage.getItem('theme');
+      const prefersDark = storedTheme === 'dark' || (!storedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      setDarkMode(prefersDark);
+      document.documentElement.classList.toggle('dark', prefersDark);
     }
+  }, []);
+
+  // Toggle and persist dark mode
+  const toggleDarkMode = () => {
+    const newMode = !darkMode;
+    setDarkMode(newMode);
+    document.documentElement.classList.toggle('dark', newMode);
+    localStorage.setItem('theme', newMode ? 'dark' : 'light');
   };
 
   return (
@@ -55,7 +66,7 @@ export default function Navbar() {
         {menuOpen ? '✖' : '☰'}
       </button>
 
-      {/* Mobile Menu Dropdown */}
+      {/* Mobile Dropdown */}
       {menuOpen && (
         <div className="absolute top-16 right-4 bg-white dark:bg-gray-800 shadow-lg rounded-lg w-48 p-4 flex flex-col gap-4 md:hidden">
           <Link href="/login" onClick={() => setMenuOpen(false)}>
