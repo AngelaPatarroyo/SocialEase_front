@@ -80,7 +80,11 @@ export default function Step1({
   const handleCheckbox = (value: string) => {
     const key = questions[step].key;
     const current = new Set(profileData[key as keyof typeof profileData]);
-    current.has(value) ? current.delete(value) : current.add(value);
+    if (current.has(value)) {
+      current.delete(value);
+    } else {
+      current.add(value);
+    }
     setProfileData({ ...profileData, [key]: Array.from(current) });
   };
 

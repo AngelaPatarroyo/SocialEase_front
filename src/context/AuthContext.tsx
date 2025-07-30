@@ -5,6 +5,7 @@ import React, {
   useState,
   useContext,
   useEffect,
+  useCallback,
   ReactNode,
 } from 'react';
 import api from '@/utils/api';
@@ -56,9 +57,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } else {
       setLoading(false);
     }
-  }, []);
+  }, [fetchProfile]);
 
-  const fetchProfile = async (jwt: string) => {
+  const fetchProfile = useCallback(async (jwt: string) => {
     try {
       const res = await api.get('/user/profile', {
         headers: { Authorization: `Bearer ${jwt}` },
@@ -70,7 +71,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const login = async (email: string, password: string) => {
     const res = await api.post('/auth/login', { email, password });
