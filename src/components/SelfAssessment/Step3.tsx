@@ -37,28 +37,29 @@ export default function Step3({
     setLoading(true);
 
     const payload = {
-        scenarioId,
-        confidenceBefore,
-        confidenceAfter: formData.confidenceAfter,
-        communicationConfidence: formData.confidenceAfter,
-        reflectionPositive: formData.reflectionPositive,
-        reflectionNegative: formData.reflectionNegative,
-        reflectionNegativeThoughts: formData.reflectionNegativeThoughts,
-        reflectionAlternativeThoughts: formData.reflectionAlternativeThoughts,
-        reflectionActionPlan: formData.reflectionActionPlan,
-        reflectionCompassion: formData.reflectionCompassion,
-        socialLevel: profileData?.socialLevel || 'medium',
-        primaryGoal: profileData?.primaryGoal || '',
-        comfortZones: profileData?.comfortZones || [],
-        preferredScenarios: profileData?.preferredScenarios || [],
-        anxietyTriggers: profileData?.anxietyTriggers || [],
-        socialFrequency: profileData?.socialFrequency || '',
-      };      
+      scenarioId,
+      confidenceBefore,
+      confidenceAfter: formData.confidenceAfter,
+      reflectionPositive: formData.reflectionPositive,
+      reflectionNegative: formData.reflectionNegative,
+      reflectionNegativeThoughts: formData.reflectionNegativeThoughts,
+      reflectionAlternativeThoughts: formData.reflectionAlternativeThoughts,
+      reflectionActionPlan: formData.reflectionActionPlan,
+      reflectionCompassion: formData.reflectionCompassion,
+      socialLevel: profileData?.socialLevel || 'medium',
+      primaryGoal: profileData?.primaryGoal || '',
+      comfortZones: profileData?.comfortZones || [],
+      preferredScenarios: profileData?.preferredScenarios || [],
+      anxietyTriggers: profileData?.anxietyTriggers || [],
+      socialFrequency: profileData?.socialFrequency || '',
+      communicationConfidence: confidenceBefore, // ✅ use Step 2 confidence for backend calculation
+    };
 
     try {
       console.log('📤 Submitting payload:', payload);
-      await api.post('/self-assessment', payload);
+      const res = await api.post('/self-assessment', payload);
       localStorage.setItem('selfAssessmentCompleted', 'true');
+      localStorage.setItem('lastAssessmentId', res.data.data._id); // optional: store assessment ID
       Swal.fire('Well done!', 'Your reflection was submitted successfully.', 'success');
       onSuccess();
     } catch (err) {
@@ -91,25 +92,32 @@ export default function Step3({
         />
       </label>
 
-      {[{
-        name: 'reflectionPositive',
-        placeholder: 'What went well or felt comfortable?',
-      }, {
-        name: 'reflectionNegative',
-        placeholder: 'What was difficult or uncomfortable?',
-      }, {
-        name: 'reflectionNegativeThoughts',
-        placeholder: 'Did you notice any negative thoughts?',
-      }, {
-        name: 'reflectionAlternativeThoughts',
-        placeholder: 'What alternative or kind thoughts could you consider?',
-      }, {
-        name: 'reflectionActionPlan',
-        placeholder: 'What is one small step you can take next time?',
-      }, {
-        name: 'reflectionCompassion',
-        placeholder: 'What would you say to a friend who had the same experience?',
-      }].map(({ name, placeholder }) => (
+      {[
+        {
+          name: 'reflectionPositive',
+          placeholder: 'What went well or felt comfortable?',
+        },
+        {
+          name: 'reflectionNegative',
+          placeholder: 'What was difficult or uncomfortable?',
+        },
+        {
+          name: 'reflectionNegativeThoughts',
+          placeholder: 'Did you notice any negative thoughts?',
+        },
+        {
+          name: 'reflectionAlternativeThoughts',
+          placeholder: 'What alternative or kind thoughts could you consider?',
+        },
+        {
+          name: 'reflectionActionPlan',
+          placeholder: 'What is one small step you can take next time?',
+        },
+        {
+          name: 'reflectionCompassion',
+          placeholder: 'What would you say to a friend who had the same experience?',
+        },
+      ].map(({ name, placeholder }) => (
         <textarea
           key={name}
           name={name}

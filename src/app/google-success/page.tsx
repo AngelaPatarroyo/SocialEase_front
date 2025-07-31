@@ -12,7 +12,7 @@ export default function GoogleSuccessPage() {
 
     if (token) {
       localStorage.setItem('token', token);
-      router.push('/dashboard');
+      window.location.href = '/dashboard'; 
     } else {
       router.push('/login');
     }
