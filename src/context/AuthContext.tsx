@@ -5,6 +5,7 @@ import React, {
   useState,
   useContext,
   useEffect,
+  useCallback,
   ReactNode,
 } from 'react';
 import api from '@/utils/api';
@@ -48,17 +49,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
-  useEffect(() => {
-    const storedToken = localStorage.getItem('token');
-    if (storedToken) {
-      setToken(storedToken);
-      fetchProfile(storedToken);
-    } else {
-      setLoading(false);
-    }
-  }, []);
-
-  const fetchProfile = async (jwt: string) => {
+  const fetchProfile = useCallback(async (jwt: string) => {
     try {
       const res = await api.get('/user/profile', {
         headers: { Authorization: `Bearer ${jwt}` },
@@ -70,7 +61,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const storedToken = localStorage.getItem('token');
+    if (storedToken) {
+      setToken(storedToken);
+      fetchProfile(storedToken);
+    } else {
+      setLoading(false);
+    }
+  }, [fetchProfile]);
 
   const login = async (email: string, password: string) => {
     const res = await api.post('/auth/login', { email, password });

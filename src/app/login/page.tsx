@@ -15,11 +15,9 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [mascotPaused, setMascotPaused] = useState(false);
 
   const showAlert = (options: any) => {
-    setMascotPaused(true);
-    Swal.fire(options).then(() => setMascotPaused(false));
+    Swal.fire(options);
   };
 
   useEffect(() => {
@@ -73,7 +71,7 @@ export default function LoginPage() {
       setTimeout(() => {
         router.push('/dashboard');
       }, 1800);
-    } catch (err: any) {
+    } catch {
       showAlert({
         icon: 'error',
         title: 'Invalid credentials',

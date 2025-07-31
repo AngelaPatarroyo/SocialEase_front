@@ -16,11 +16,9 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [mascotPaused, setMascotPaused] = useState(false);
 
   const showAlert = (options: any) => {
-    setMascotPaused(true);
-    Swal.fire(options).then(() => setMascotPaused(false));
+    Swal.fire(options);
   };
 
   useEffect(() => {
