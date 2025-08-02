@@ -4,139 +4,139 @@ import { useState } from 'react';
 
 interface Question {
   label: string;
-  type: 'buttons' | 'input' | 'checkbox';
+  options: string[];
   key: string;
-  options?: { id: string; label: string }[] | string[];
 }
 
-export default function Step1({
-  onNext,
-}: {
-  onNext: (scenarioId: string, profileData: any) => void;
-}) {
-  const [step, setStep] = useState(0);
-  const [scenarioId, setScenarioId] = useState('');
-  const [profileData, setProfileData] = useState({
-    socialLevel: 'medium',
-    primaryGoal: '',
-    comfortZones: [] as string[],
-    preferredScenarios: [] as string[],
-    anxietyTriggers: [] as string[],
-    socialFrequency: '',
-  });
-
+export default function Step1({ onNext }: { onNext: (profileData: any) => void }) {
   const questions: Question[] = [
     {
-      label: 'Which scenario would you like to practice?',
-      type: 'buttons',
-      key: 'scenarioId',
+      label: 'How do you currently feel in everyday social situations?',
+      key: 'socialComfort',
       options: [
-        { id: 'smalltalk', label: 'Starting Small Talk' },
-        { id: 'groupchat', label: 'Joining a Group Conversation' },
-        { id: 'meeting', label: 'Speaking in a Meeting' },
+        'Very comfortable – I enjoy them.',
+        'Generally fine, but I sometimes feel awkward.',
+        'Often anxious or unsure how to act.',
+        'Very anxious – I avoid them when possible.',
       ],
     },
     {
-      label: 'What is your primary goal?',
-      type: 'input',
-      key: 'primaryGoal',
+      label: 'How often do you avoid social activities you’d like to attend?',
+      key: 'avoidance',
+      options: ['Rarely or never', 'Occasionally', 'Often', 'Almost always'],
     },
     {
-      label: 'Which settings do you feel most comfortable in?',
-      type: 'checkbox',
-      key: 'comfortZones',
-      options: ['Work', 'Friends', 'Online'],
+      label: 'How confident do you feel in starting conversations?',
+      key: 'conversationConfidence',
+      options: [
+        'Very confident',
+        'Somewhat confident',
+        'Not very confident',
+        'Not at all confident',
+      ],
     },
     {
-      label: 'What types of scenarios do you want to practice?',
-      type: 'checkbox',
-      key: 'preferredScenarios',
-      options: ['Networking', 'Public Speaking'],
+      label: 'How do you typically feel after social interactions?',
+      key: 'postInteraction',
+      options: [
+        'Proud and satisfied',
+        'Neutral or slightly unsure',
+        'Self-critical or embarrassed',
+        'Very upset or ashamed',
+      ],
     },
     {
-      label: 'What tends to trigger your anxiety?',
-      type: 'checkbox',
-      key: 'anxietyTriggers',
-      options: ['Crowded places', 'Eye contact'],
+      label: 'Which best describes your recent social experiences?',
+      key: 'recentExperiences',
+      options: [
+        'Mostly positive',
+        'Mixed — some good, some bad',
+        'Mostly negative or difficult',
+        'Very limited or none',
+      ],
     },
     {
-      label: 'How often are you in social situations?',
-      type: 'input',
+      label: 'What is your main motivation for using this app?',
+      key: 'motivation',
+      options: [
+        'To build confidence in social situations',
+        'To reduce anxiety symptoms',
+        'To prepare for specific challenges (e.g. public speaking)',
+        'To feel more connected and less isolated',
+      ],
+    },
+    {
+      label: 'How often do you engage in social activities?',
       key: 'socialFrequency',
+      options: ['Daily', 'Weekly', 'Monthly', 'Rarely or never'],
+    },
+    {
+      label: 'How confident are you in your communication skills?',
+      key: 'communicationConfidence',
+      options: [
+        'Very confident',
+        'Somewhat confident',
+        'Not very confident',
+        'Not at all confident',
+      ],
     },
   ];
 
-  const handleNext = () => setStep((prev) => prev + 1);
+  const [step, setStep] = useState(0);
+  const [profileData, setProfileData] = useState<any>({});
 
-  const handleButton = (id: string) => {
-    setScenarioId(id);
-    handleNext();
+  const total = questions.length;
+
+  const getProgressColor = (index: number) => {
+    const colors = [
+      'bg-yellow-400',
+      'bg-orange-400',
+      'bg-green-400',
+      'bg-blue-400',
+      'bg-indigo-500',
+      'bg-purple-500',
+    ];
+    return colors[index] || 'bg-indigo-500';
   };
 
-  const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setProfileData({ ...profileData, [questions[step].key]: e.target.value });
-  };
+  const handleOptionClick = (value: string) => {
+    const currentKey = questions[step].key;
+    const updatedData = { ...profileData, [currentKey]: value };
+    setProfileData(updatedData);
 
-  const handleCheckbox = (value: string) => {
-    const key = questions[step].key;
-    const current = new Set(profileData[key as keyof typeof profileData]);
-    if (current.has(value)) {
-      current.delete(value);
+    if (step + 1 < total) {
+      setStep((prev) => prev + 1);
     } else {
-      current.add(value);
+      onNext(updatedData);
     }
-    setProfileData({ ...profileData, [key]: Array.from(current) });
   };
 
-  const isLast = step === questions.length - 1;
   const q = questions[step];
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-lg font-semibold text-indigo-800 dark:text-indigo-200">
-        {q.label}
-      </h2>
+    <div className="w-full space-y-6">
+      <div className="text-sm text-gray-500">Step {step + 1} of {total}</div>
 
-      {q.type === 'buttons' &&
-        (q.options as { id: string; label: string }[]).map((opt) => (
+      <div className="w-full h-2 bg-gray-200 rounded">
+        <div
+          className={`h-2 ${getProgressColor(step)} rounded transition-all`}
+          style={{ width: `${((step + 1) / total) * 100}%` }}
+        />
+      </div>
+
+      <h2 className="text-xl font-semibold text-indigo-800 dark:text-white">{q.label}</h2>
+
+      <div className="space-y-3">
+        {q.options.map((option) => (
           <button
-            key={opt.id}
-            onClick={() => handleButton(opt.id)}
-            className="w-full py-2 px-4 rounded-lg bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900 dark:hover:bg-indigo-800 text-indigo-700 dark:text-white"
+            key={option}
+            onClick={() => handleOptionClick(option)}
+            className="w-full py-3 px-4 rounded-lg bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-800 dark:hover:bg-indigo-700 text-indigo-800 dark:text-white font-medium shadow-sm transition"
           >
-            {opt.label}
+            {option}
           </button>
         ))}
-
-      {q.type === 'input' && (
-        <input
-          type="text"
-          value={profileData[q.key as keyof typeof profileData] as string}
-          onChange={handleInput}
-          className="w-full p-3 border rounded"
-        />
-      )}
-
-      {q.type === 'checkbox' &&
-        (q.options as string[]).map((opt) => (
-          <label key={opt} className="block">
-            <input
-              type="checkbox"
-              checked={(profileData[q.key as keyof typeof profileData] as string[]).includes(opt)}
-              onChange={() => handleCheckbox(opt)}
-            />{' '}
-            {opt}
-          </label>
-        ))}
-
-      {q.type !== 'buttons' && (
-        <button
-          onClick={isLast ? () => onNext(scenarioId, profileData) : handleNext}
-          className="mt-4 w-full bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700"
-        >
-          {isLast ? 'Continue to Step 2' : 'Next'}
-        </button>
-      )}
+      </div>
     </div>
   );
 }

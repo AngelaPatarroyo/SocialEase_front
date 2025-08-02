@@ -1,142 +1,160 @@
 'use client';
 
 import { useState } from 'react';
-import api from '@/utils/api';
-import Swal from 'sweetalert2';
 
-export default function Step3({
-  scenarioId,
-  confidenceBefore,
-  profileData,
-  onSuccess,
-}: {
-  scenarioId: string;
-  confidenceBefore: number;
-  profileData: any;
-  onSuccess: () => void;
-}) {
-  const [formData, setFormData] = useState({
-    confidenceAfter: 3,
-    reflectionPositive: '',
-    reflectionNegative: '',
-    reflectionNegativeThoughts: '',
-    reflectionAlternativeThoughts: '',
-    reflectionActionPlan: '',
-    reflectionCompassion: '',
+export default function Step3({ onSubmit }: { onSubmit: (data: any) => void }) {
+  const [data, setData] = useState({
+    confidenceAfter: 5,
+    primaryGoal: '',
+    comfortZones: [] as string[],
+    preferredScenarios: [] as string[],
+    anxietyTriggers: [] as string[],
   });
 
-  const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+  const handleSubmit = () => {
+    setSubmitted(true);
+    const required = [
+      'confidenceAfter',
+      'primaryGoal',
+      'comfortZones',
+      'preferredScenarios',
+      'anxietyTriggers',
+    ];
 
-    const payload = {
-      scenarioId,
-      confidenceBefore,
-      confidenceAfter: formData.confidenceAfter,
-      reflectionPositive: formData.reflectionPositive,
-      reflectionNegative: formData.reflectionNegative,
-      reflectionNegativeThoughts: formData.reflectionNegativeThoughts,
-      reflectionAlternativeThoughts: formData.reflectionAlternativeThoughts,
-      reflectionActionPlan: formData.reflectionActionPlan,
-      reflectionCompassion: formData.reflectionCompassion,
-      socialLevel: profileData?.socialLevel || 'medium',
-      primaryGoal: profileData?.primaryGoal || '',
-      comfortZones: profileData?.comfortZones || [],
-      preferredScenarios: profileData?.preferredScenarios || [],
-      anxietyTriggers: profileData?.anxietyTriggers || [],
-      socialFrequency: profileData?.socialFrequency || '',
-      communicationConfidence: confidenceBefore, // ✅ use Step 2 confidence for backend calculation
-    };
+    const allFilled = required.every((key) => {
+      const value = data[key as keyof typeof data];
+      return Array.isArray(value) ? value.length > 0 : value !== '';
+    });
 
-    try {
-      console.log('📤 Submitting payload:', payload);
-      const res = await api.post('/self-assessment', payload);
-      localStorage.setItem('selfAssessmentCompleted', 'true');
-      localStorage.setItem('lastAssessmentId', res.data.data._id); // optional: store assessment ID
-      Swal.fire('Well done!', 'Your reflection was submitted successfully.', 'success');
-      onSuccess();
-    } catch (err) {
-      console.error('❌ Reflection submission failed:', err);
-      Swal.fire('Oops!', 'Something went wrong. Try again later.', 'error');
-    } finally {
-      setLoading(false);
+    if (allFilled) {
+      onSubmit(data);
+    } else {
+      alert('Please complete all fields before submitting.');
     }
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="space-y-4 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md"
-    >
-      <h2 className="text-xl font-semibold text-indigo-700 dark:text-indigo-200 mb-4">
-        Step 3: Reflect on Your Scenario
+    <div className="space-y-6">
+      <div className="text-sm text-gray-500">Final Step</div>
+
+      <div className="w-full h-2 bg-gray-200 rounded">
+        <div className="h-2 bg-indigo-500 rounded transition-all" style={{ width: '100%' }}></div>
+      </div>
+
+      <h2 className="text-lg font-semibold text-indigo-800">
+        Help us understand your current goals and preferences
       </h2>
 
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
-        Confidence now (1-10): {formData.confidenceAfter}
+      {/* Primary Goal */}
+      <div className="space-y-1">
+        <label className="block font-medium text-sm">What is your main goal?</label>
+        <input
+          type="text"
+          name="primaryGoal"
+          value={data.primaryGoal}
+          onChange={handleChange}
+          className="w-full px-3 py-2 border rounded"
+          placeholder="e.g., Improve small talk"
+        />
+      </div>
+
+      {/* Confidence After */}
+      <div className="space-y-1">
+        <label className="block font-medium text-sm">
+          How confident do you feel after this assessment? ({data.confidenceAfter})
+        </label>
         <input
           type="range"
           name="confidenceAfter"
           min="1"
           max="10"
-          value={formData.confidenceAfter}
-          onChange={handleChange}
+          value={data.confidenceAfter}
+          onChange={(e) =>
+            setData({ ...data, confidenceAfter: Number(e.target.value) })
+          }
           className="w-full"
         />
-      </label>
+      </div>
 
-      {[
-        {
-          name: 'reflectionPositive',
-          placeholder: 'What went well or felt comfortable?',
-        },
-        {
-          name: 'reflectionNegative',
-          placeholder: 'What was difficult or uncomfortable?',
-        },
-        {
-          name: 'reflectionNegativeThoughts',
-          placeholder: 'Did you notice any negative thoughts?',
-        },
-        {
-          name: 'reflectionAlternativeThoughts',
-          placeholder: 'What alternative or kind thoughts could you consider?',
-        },
-        {
-          name: 'reflectionActionPlan',
-          placeholder: 'What is one small step you can take next time?',
-        },
-        {
-          name: 'reflectionCompassion',
-          placeholder: 'What would you say to a friend who had the same experience?',
-        },
-      ].map(({ name, placeholder }) => (
-        <textarea
-          key={name}
-          name={name}
-          placeholder={placeholder}
-          value={(formData as any)[name]}
-          onChange={handleChange}
-          className="w-full p-3 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-          rows={3}
-          required
-        />
-      ))}
+      {/* Comfort Zones */}
+      <MultiSelect
+        label="Where do you feel most comfortable?"
+        options={['Home', 'With friends', 'Online spaces', 'Work', 'One-on-one settings']}
+        selected={data.comfortZones}
+        onChange={(values) => setData({ ...data, comfortZones: values })}
+      />
+
+      {/* Preferred Scenarios */}
+      <MultiSelect
+        label="What types of social situations would you like to improve?"
+        options={['Public speaking', 'Networking', 'Dating', 'Group conversations', 'Phone calls']}
+        selected={data.preferredScenarios}
+        onChange={(values) => setData({ ...data, preferredScenarios: values })}
+      />
+
+      {/* Anxiety Triggers */}
+      <MultiSelect
+        label="What tends to trigger your anxiety?"
+        options={['Crowds', 'Being watched', 'Silence', 'Authority figures', 'New people']}
+        selected={data.anxietyTriggers}
+        onChange={(values) => setData({ ...data, anxietyTriggers: values })}
+      />
 
       <button
-        type="submit"
-        disabled={loading}
-        className="w-full bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700 transition"
+        onClick={handleSubmit}
+        className="w-full mt-4 bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700 transition"
       >
-        {loading ? 'Submitting...' : 'Submit Reflection'}
+        Submit Assessment
       </button>
-    </form>
+    </div>
+  );
+}
+
+function MultiSelect({
+  label,
+  options,
+  selected,
+  onChange,
+}: {
+  label: string;
+  options: string[];
+  selected: string[];
+  onChange: (newSelected: string[]) => void;
+}) {
+  const toggleOption = (option: string) => {
+    if (selected.includes(option)) {
+      onChange(selected.filter((item) => item !== option));
+    } else {
+      onChange([...selected, option]);
+    }
+  };
+
+  return (
+    <div className="space-y-1">
+      <label className="block font-medium text-sm">{label}</label>
+      <div className="flex flex-wrap gap-2">
+        {options.map((option) => (
+          <button
+            key={option}
+            type="button"
+            onClick={() => toggleOption(option)}
+            className={`px-3 py-1 rounded-full border text-sm ${
+              selected.includes(option)
+                ? 'bg-indigo-600 text-white border-indigo-600'
+                : 'bg-white text-gray-700 border-gray-300'
+            }`}
+          >
+            {option}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }

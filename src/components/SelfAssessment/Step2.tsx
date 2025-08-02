@@ -2,27 +2,23 @@
 
 import { useState } from 'react';
 
-export default function Step2({
-  onNext,
-  onBack,
-}: {
-  onNext: (confidence: number) => void;
-  onBack: () => void;
-}) {
-  const [confidence, setConfidence] = useState(3);
-
-  const handleSubmit = () => {
-    onNext(confidence);
-  };
+export default function Step2({ onNext }: { onNext: (confidence: number) => void }) {
+  const [confidence, setConfidence] = useState(5);
 
   return (
     <div className="space-y-6">
-      <h2 className="text-lg font-semibold text-indigo-800 dark:text-indigo-200">
-        How confident do you feel about facing this scenario?
+      <div className="text-sm text-gray-500">Final Step</div>
+      <div className="w-full h-2 bg-gray-200 rounded">
+        <div
+          className="h-2 bg-green-500 rounded transition-all"
+          style={{ width: `100%` }}
+        />
+      </div>
+
+      <h2 className="text-lg font-semibold text-indigo-800">
+        On a scale of 1 to 10, how confident do you feel about social situations right now?
       </h2>
-      <p className="text-sm text-gray-600 dark:text-gray-300">
-        There’s no right or wrong answer — just answer honestly for your own awareness.
-      </p>
+
       <div>
         <label className="block text-sm font-medium mb-1">
           Confidence Level: {confidence}
@@ -36,17 +32,13 @@ export default function Step2({
           className="w-full"
         />
       </div>
-      <div className="flex justify-between mt-4">
-        <button onClick={onBack} className="text-sm text-gray-500 hover:underline">
-          ⬅ Back
-        </button>
-        <button
-          onClick={handleSubmit}
-          className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
-        >
-          Continue ➡
-        </button>
-      </div>
+
+      <button
+        onClick={() => onNext(confidence)}
+        className="w-full mt-4 bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700"
+      >
+        Finish Assessment
+      </button>
     </div>
   );
 }

@@ -53,7 +53,7 @@ export default function ProfilePage() {
 
         const formData = new FormData();
         formData.append('file', customAvatar);
-        formData.append('api_key', process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY!);
+        formData.append('api_key', sig.api_key);
         formData.append('timestamp', sig.timestamp);
         formData.append('signature', sig.signature);
         formData.append('folder', sig.folder);

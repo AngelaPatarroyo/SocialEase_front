@@ -13,6 +13,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [showSelfAssessment, setShowSelfAssessment] = useState(false);
+  const [shouldRefresh, setShouldRefresh] = useState(false); // ✅ added
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -33,23 +34,25 @@ export default function DashboardPage() {
         const res = await api.get('/user/dashboard');
         console.log('✅ Dashboard:', res.data);
         setDashboard(res.data.data);
+
+        const selfAssessmentRes = await api.get('/self-assessment', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const hasCompleted = selfAssessmentRes.data.data.length > 0;
+        localStorage.setItem('selfAssessmentCompleted', hasCompleted ? 'true' : 'false');
+        setShowSelfAssessment(!hasCompleted);
       } catch (err) {
-        console.error('❌ Failed to load dashboard:', (err as any).response?.data || (err as Error).message);
+        console.error('❌ Failed to load dashboard or self-assessment:', err);
         setError(true);
       } finally {
         setLoading(false);
+        setShouldRefresh(false); // ✅ reset trigger
       }
     };
 
     fetchDashboard();
-  }, [router]);
-
-  useEffect(() => {
-    const alreadyCompleted = localStorage.getItem('selfAssessmentCompleted');
-    if (!alreadyCompleted) {
-      setShowSelfAssessment(true);
-    }
-  }, []);
+  }, [router, shouldRefresh]); // ✅ re-run when refresh flag is set
 
   if (loading) {
     return <p className="text-center mt-10 text-gray-500">Loading your dashboard...</p>;
@@ -79,7 +82,9 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-white dark:from-gray-900 dark:to-gray-800 p-6 md:p-10">
-      {showSelfAssessment && <SelfAssessmentModal />}
+      {showSelfAssessment && (
+        <SelfAssessmentModal onSuccess={() => setShouldRefresh(true)} />
+      )}
 
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-8">
@@ -102,6 +107,7 @@ export default function DashboardPage() {
         </Link>
       </div>
 
+      {/* Mascot */}
       <div className="flex justify-center mb-6">
         <Image
           src="/images/wizard-blob.png"
