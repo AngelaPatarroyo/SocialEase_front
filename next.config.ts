@@ -5,7 +5,12 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "lh3.googleusercontent.com",
+        hostname: "lh3.googleusercontent.com", // for Google profile images
+      },
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com", 
+        
       },
     ],
   },

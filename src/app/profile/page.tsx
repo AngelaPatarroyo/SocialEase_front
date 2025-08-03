@@ -28,6 +28,8 @@ export default function ProfilePage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
+    console.log(process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME);
+
     if (user) {
       setName(user.name || '');
       setTheme(user.theme || 'light');
@@ -54,9 +56,12 @@ export default function ProfilePage() {
         const formData = new FormData();
         formData.append('file', customAvatar);
         formData.append('api_key', sig.api_key);
-        formData.append('timestamp', sig.timestamp);
+        formData.append('timestamp', sig.timestamp.toString());
         formData.append('signature', sig.signature);
         formData.append('folder', sig.folder);
+        formData.append('upload_preset', sig.upload_preset);
+
+
 
         const cloudRes = await fetch(
           `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
@@ -123,8 +128,8 @@ export default function ProfilePage() {
   const displayAvatar = customAvatar
     ? URL.createObjectURL(customAvatar)
     : avatar.startsWith('http')
-    ? avatar
-    : `/images/${avatar || 'default-avatar.png'}`;
+      ? avatar
+      : `/images/${avatar || 'default-avatar.png'}`;
 
   return (
     <div className="p-8 min-h-screen bg-gradient-to-br from-purple-50 to-white flex flex-col items-center">
@@ -133,9 +138,8 @@ export default function ProfilePage() {
 
         {message && (
           <div
-            className={`mb-4 p-3 rounded-lg text-center font-semibold ${
-              message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-            }`}
+            className={`mb-4 p-3 rounded-lg text-center font-semibold ${message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+              }`}
           >
             {message.text}
           </div>
@@ -212,9 +216,8 @@ export default function ProfilePage() {
         <button
           onClick={handleSave}
           disabled={loading}
-          className={`w-full py-3 rounded-lg text-white font-semibold transition ${
-            loading ? 'bg-gray-400' : 'bg-purple-600 hover:bg-purple-700'
-          }`}
+          className={`w-full py-3 rounded-lg text-white font-semibold transition ${loading ? 'bg-gray-400' : 'bg-purple-600 hover:bg-purple-700'
+            }`}
         >
           {loading ? 'Saving...' : 'Save Changes'}
         </button>
