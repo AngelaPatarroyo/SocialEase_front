@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 import { UploadCloud, Eye, EyeOff } from 'lucide-react';
 
 export default function ProfilePage() {
-  const { user, token, logout } = useAuth();
+  const { user, token, logout, refreshProfile } = useAuth();
   const router = useRouter();
 
   const [name, setName] = useState('');
@@ -28,8 +28,10 @@ export default function ProfilePage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
-    console.log(process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME);
+    refreshProfile();
+  }, [refreshProfile]);
 
+  useEffect(() => {
     if (user) {
       setName(user.name || '');
       setTheme(user.theme || 'light');
@@ -61,8 +63,6 @@ export default function ProfilePage() {
         formData.append('folder', sig.folder);
         formData.append('upload_preset', sig.upload_preset);
 
-
-
         const cloudRes = await fetch(
           `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
           {
@@ -85,6 +85,7 @@ export default function ProfilePage() {
       );
 
       setMessage({ type: 'success', text: 'Profile updated successfully!' });
+      await refreshProfile();
     } catch (err: any) {
       setMessage({
         type: 'error',
@@ -102,11 +103,21 @@ export default function ProfilePage() {
     }
 
     try {
-      await api.put(
+      const payload =
+        user?.provider === 'google'
+          ? { newPassword }
+          : { currentPassword, newPassword };
+
+      const res = await api.put(
         '/user/password',
-        { currentPassword, newPassword },
+        payload,
         { headers: { Authorization: `Bearer ${token}` } }
       );
+
+      if (res.data?.token && res.data?.user) {
+        localStorage.setItem('token', res.data.token);
+        localStorage.setItem('user', JSON.stringify(res.data.user));
+      }
 
       setMessage({ type: 'success', text: 'Password updated successfully!' });
       setCurrentPassword('');
@@ -115,7 +126,10 @@ export default function ProfilePage() {
     } catch (err: any) {
       setMessage({
         type: 'error',
-        text: err.response?.data?.message || 'Failed to update password',
+        text:
+          err.response?.data?.message ||
+          err.response?.data?.error ||
+          'Failed to update password',
       });
     }
   };
@@ -128,8 +142,8 @@ export default function ProfilePage() {
   const displayAvatar = customAvatar
     ? URL.createObjectURL(customAvatar)
     : avatar.startsWith('http')
-      ? avatar
-      : `/images/${avatar || 'default-avatar.png'}`;
+    ? avatar
+    : `/images/${avatar || 'default-avatar.png'}`;
 
   return (
     <div className="p-8 min-h-screen bg-gradient-to-br from-purple-50 to-white flex flex-col items-center">
@@ -138,14 +152,16 @@ export default function ProfilePage() {
 
         {message && (
           <div
-            className={`mb-4 p-3 rounded-lg text-center font-semibold ${message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-              }`}
+            className={`mb-4 p-3 rounded-lg text-center font-semibold ${
+              message.type === 'success'
+                ? 'bg-green-100 text-green-700'
+                : 'bg-red-100 text-red-700'
+            }`}
           >
             {message.text}
           </div>
         )}
 
-        {/* Avatar */}
         <div className="flex flex-col items-center mb-6">
           <Image
             src={displayAvatar}
@@ -177,7 +193,6 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Name */}
         <div className="mb-4">
           <label className="block text-gray-600 mb-2 font-medium">Name</label>
           <input
@@ -188,7 +203,6 @@ export default function ProfilePage() {
           />
         </div>
 
-        {/* Email */}
         <div className="mb-4">
           <label className="block text-gray-600 mb-2 font-medium">Email</label>
           <input
@@ -199,7 +213,6 @@ export default function ProfilePage() {
           />
         </div>
 
-        {/* Theme */}
         <div className="mb-6">
           <label className="block text-gray-600 mb-2 font-medium">Theme</label>
           <select
@@ -212,52 +225,74 @@ export default function ProfilePage() {
           </select>
         </div>
 
-        {/* Save Changes */}
         <button
           onClick={handleSave}
           disabled={loading}
-          className={`w-full py-3 rounded-lg text-white font-semibold transition ${loading ? 'bg-gray-400' : 'bg-purple-600 hover:bg-purple-700'
-            }`}
+          className={`w-full py-3 rounded-lg text-white font-semibold transition ${
+            loading ? 'bg-gray-400' : 'bg-purple-600 hover:bg-purple-700'
+          }`}
         >
           {loading ? 'Saving...' : 'Save Changes'}
         </button>
 
-        {/* Password Update */}
-        <div className="mt-8 border-t pt-6">
-          <h2 className="text-xl font-semibold mb-4 text-purple-700">Update Password</h2>
+        {user?.provider !== 'google' || user?.password ? (
+          <div className="mt-8 border-t pt-6">
+            <h2 className="text-xl font-semibold mb-4 text-purple-700">Update Password</h2>
 
-          {[
-            { value: currentPassword, setter: setCurrentPassword, label: 'Current', toggle: showCurrentPassword, setToggle: setShowCurrentPassword },
-            { value: newPassword, setter: setNewPassword, label: 'New', toggle: showNewPassword, setToggle: setShowNewPassword },
-            { value: confirmPassword, setter: setConfirmPassword, label: 'Confirm New', toggle: showConfirmPassword, setToggle: setShowConfirmPassword }
-          ].map(({ value, setter, label, toggle, setToggle }, i) => (
-            <div key={i} className="relative mb-3">
-              <input
-                type={toggle ? 'text' : 'password'}
-                placeholder={`${label} Password`}
-                value={value}
-                onChange={(e) => setter(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg pr-10"
-              />
-              <button
-                type="button"
-                onClick={() => setToggle(!toggle)}
-                className="absolute inset-y-0 right-3 flex items-center text-gray-500"
-              >
-                {toggle ? <EyeOff size={20} /> : <Eye size={20} />}
-              </button>
-            </div>
-          ))}
+            {[
+              {
+                value: currentPassword,
+                setter: setCurrentPassword,
+                label: 'Current',
+                toggle: showCurrentPassword,
+                setToggle: setShowCurrentPassword,
+              },
+              {
+                value: newPassword,
+                setter: setNewPassword,
+                label: 'New',
+                toggle: showNewPassword,
+                setToggle: setShowNewPassword,
+              },
+              {
+                value: confirmPassword,
+                setter: setConfirmPassword,
+                label: 'Confirm New',
+                toggle: showConfirmPassword,
+                setToggle: setShowConfirmPassword,
+              },
+            ].map(({ value, setter, label, toggle, setToggle }, i) => (
+              <div key={i} className="relative mb-3">
+                <input
+                  type={toggle ? 'text' : 'password'}
+                  placeholder={`${label} Password`}
+                  value={value}
+                  onChange={(e) => setter(e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded-lg pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setToggle(!toggle)}
+                  className="absolute inset-y-0 right-3 flex items-center text-gray-500"
+                >
+                  {toggle ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
+            ))}
 
-          <button
-            onClick={handlePasswordUpdate}
-            className="bg-purple-600 text-white w-full py-2 rounded-lg hover:bg-purple-700"
-          >
-            Update Password
-          </button>
-        </div>
+            <button
+              onClick={handlePasswordUpdate}
+              className="bg-purple-600 text-white w-full py-2 rounded-lg hover:bg-purple-700"
+            >
+              Update Password
+            </button>
+          </div>
+        ) : (
+          <div className="mt-8 border-t pt-6 text-center text-sm text-gray-500">
+            You signed up with Google. Set a password to allow email login.
+          </div>
+        )}
 
-        {/* Logout */}
         <button
           onClick={handleLogout}
           className="w-full mt-6 py-3 rounded-lg bg-red-500 hover:bg-red-600 text-white font-semibold"

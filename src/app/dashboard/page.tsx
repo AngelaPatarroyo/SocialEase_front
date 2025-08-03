@@ -6,14 +6,17 @@ import api from '@/utils/api';
 import Image from 'next/image';
 import Link from 'next/link';
 import SelfAssessmentModal from '@/components/SelfAssessmentModal';
+import { useAuth } from '@/context/AuthContext'; // ✅ Import context
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { refreshProfile } = useAuth(); // ✅ Get the refresh function
+
   const [dashboard, setDashboard] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [showSelfAssessment, setShowSelfAssessment] = useState(false);
-  const [shouldRefresh, setShouldRefresh] = useState(false); // ✅ added
+  const [shouldRefresh, setShouldRefresh] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -32,7 +35,6 @@ export default function DashboardPage() {
 
       try {
         const res = await api.get('/user/dashboard');
-        console.log('✅ Dashboard:', res.data);
         setDashboard(res.data.data);
 
         const selfAssessmentRes = await api.get('/self-assessment', {
@@ -42,17 +44,19 @@ export default function DashboardPage() {
         const hasCompleted = selfAssessmentRes.data.data.length > 0;
         localStorage.setItem('selfAssessmentCompleted', hasCompleted ? 'true' : 'false');
         setShowSelfAssessment(!hasCompleted);
+
+        await refreshProfile(); // ✅ Ensure latest user context
       } catch (err) {
         console.error('❌ Failed to load dashboard or self-assessment:', err);
         setError(true);
       } finally {
         setLoading(false);
-        setShouldRefresh(false); // ✅ reset trigger
+        setShouldRefresh(false);
       }
     };
 
     fetchDashboard();
-  }, [router, shouldRefresh]); // ✅ re-run when refresh flag is set
+  }, [router, shouldRefresh, refreshProfile]);
 
   if (loading) {
     return <p className="text-center mt-10 text-gray-500">Loading your dashboard...</p>;
@@ -86,7 +90,6 @@ export default function DashboardPage() {
         <SelfAssessmentModal onSuccess={() => setShouldRefresh(true)} />
       )}
 
-      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-8">
         <div>
           <h1 className="text-3xl md:text-4xl font-bold text-indigo-700 dark:text-white">
@@ -107,7 +110,6 @@ export default function DashboardPage() {
         </Link>
       </div>
 
-      {/* Mascot */}
       <div className="flex justify-center mb-6">
         <Image
           src="/images/wizard-blob.png"
@@ -118,7 +120,6 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* Motivation */}
       <div className="bg-purple-100 dark:bg-indigo-900 rounded-xl p-6 shadow-md text-center mb-6">
         <div className="text-2xl font-semibold text-indigo-700 dark:text-indigo-200">
           You're doing great! 💪
@@ -134,14 +135,12 @@ export default function DashboardPage() {
         </Link>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <StatCard label="XP" value={stats.xp} />
         <StatCard label="Level" value={`Level ${stats.level}`} />
         <StatCard label="Streak" value={`${stats.streak} days`} />
       </div>
 
-      {/* XP Progress */}
       <div className="bg-white dark:bg-gray-700 p-4 rounded-xl shadow mb-8">
         <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">
           XP Progress
@@ -157,7 +156,6 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      {/* Suggestions */}
       <div className="bg-white dark:bg-gray-700 p-6 rounded-xl shadow mb-8">
         <h3 className="text-lg font-semibold text-indigo-600 dark:text-indigo-300 mb-2">
           Suggestions
@@ -175,7 +173,6 @@ export default function DashboardPage() {
         </ul>
       </div>
 
-      {/* Badges */}
       <div className="bg-white dark:bg-gray-700 p-6 rounded-xl shadow mb-8">
         <h3 className="text-lg font-semibold text-indigo-600 dark:text-indigo-300 mb-4">
           Your Badges
@@ -198,7 +195,6 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* Goals */}
       <div className="bg-white dark:bg-gray-700 p-6 rounded-xl shadow mb-8">
         <h3 className="text-lg font-semibold text-purple-600 dark:text-purple-300 mb-4">
           Your Goals
@@ -208,8 +204,7 @@ export default function DashboardPage() {
             {goals.slice(0, 3).map((goal: any, index: number) => (
               <li key={index}>
                 <span className="font-medium">{goal.title}</span> – Target: {goal.target}
-                {goal.deadline &&
-                  ` (by ${new Date(goal.deadline).toLocaleDateString()})`}
+                {goal.deadline && ` (by ${new Date(goal.deadline).toLocaleDateString()})`}
               </li>
             ))}
           </ul>
@@ -220,7 +215,6 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* Recent Scenarios */}
       <div className="bg-white dark:bg-gray-700 p-6 rounded-xl shadow mb-8">
         <h3 className="text-lg font-semibold text-indigo-600 dark:text-indigo-300 mb-4">
           Recent Scenarios
@@ -238,7 +232,6 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* Motivation Message */}
       {messages.length > 0 && (
         <div className="bg-indigo-50 dark:bg-indigo-900 border-l-4 border-indigo-500 text-indigo-700 dark:text-indigo-200 p-4 rounded">
           <p className="font-medium">{messages[0]}</p>
@@ -248,7 +241,6 @@ export default function DashboardPage() {
   );
 }
 
-// Helper: StatCard
 const StatCard = ({ label, value }: { label: string; value: string | number }) => (
   <div className="bg-white dark:bg-gray-700 rounded-xl p-6 shadow-md text-center">
     <h4 className="text-sm text-gray-500 dark:text-gray-300">{label}</h4>

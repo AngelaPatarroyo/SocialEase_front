@@ -30,6 +30,8 @@ interface LocalUser {
   streak?: number;
   badges: string[];
   goals?: Goal[];
+  provider?: 'google' | 'local';
+  password?: string;
 }
 
 interface AuthContextProps {
@@ -40,6 +42,7 @@ interface AuthContextProps {
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
   updateUser: (updates: Partial<LocalUser>) => void;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
@@ -49,19 +52,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
+  const logout = () => {
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    delete api.defaults.headers.common['Authorization'];
+  };
+
   const fetchProfile = useCallback(async (jwt: string) => {
     try {
       const res = await api.get('/user/profile', {
         headers: { Authorization: `Bearer ${jwt}` },
       });
-      setUser(res.data.data);
+
+      const storedUser = localStorage.getItem('user');
+      const provider = storedUser ? JSON.parse(storedUser).provider : undefined;
+
+      const fullUser = {
+        ...res.data.data,
+        provider: res.data.data.provider || provider || 'local',
+      };
+
+      setUser(fullUser);
+      localStorage.setItem('user', JSON.stringify(fullUser));
+      api.defaults.headers.common['Authorization'] = `Bearer ${jwt}`;
     } catch (err) {
-      console.error('Failed to fetch profile:', err);
+      console.error('❌ Failed to fetch profile:', err);
       logout();
     } finally {
       setLoading(false);
     }
   }, []);
+
+  const refreshProfile = useCallback(async () => {
+    if (!token) return;
+    await fetchProfile(token);
+  }, [fetchProfile, token]);
 
   useEffect(() => {
     const storedToken = localStorage.getItem('token');
@@ -79,25 +106,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setToken(token);
     setUser(user);
     localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(user));
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
   };
 
   const register = async (name: string, email: string, password: string) => {
     await api.post('/auth/register', { name, email, password });
   };
 
-  const logout = () => {
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem('token');
-  };
-
   const updateUser = (updates: Partial<LocalUser>) => {
-    setUser((prev) => (prev ? { ...prev, ...updates } : prev));
+    setUser((prev) => {
+      const updated = prev ? { ...prev, ...updates } : prev;
+      if (updated) localStorage.setItem('user', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   return (
     <AuthContext.Provider
-      value={{ user, token, loading, login, register, logout, updateUser }}
+      value={{ user, token, loading, login, register, logout, updateUser, refreshProfile }}
     >
       {children}
     </AuthContext.Provider>

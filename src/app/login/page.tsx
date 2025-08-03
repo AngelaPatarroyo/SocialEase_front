@@ -71,13 +71,19 @@ export default function LoginPage() {
       setTimeout(() => {
         router.push('/dashboard');
       }, 1800);
-    } catch {
+    } catch (err: any) {
+      console.error('❌ Login error:', err.response?.data || err.message || err);
+
       showAlert({
         icon: 'error',
-        title: 'Invalid credentials',
-        text: 'Please try again.',
+        title: 'Login failed',
+        text:
+          err.response?.data?.message ||
+          err.response?.data?.error ||
+          'Invalid email or password. Please try again.',
       });
-    } finally {
+    }
+    finally {
       setLoading(false);
     }
   };
