@@ -1,5 +1,4 @@
 'use client';
-
 import './globals.css';
 import Script from 'next/script';
 import { AuthProvider } from '@/context/AuthContext';

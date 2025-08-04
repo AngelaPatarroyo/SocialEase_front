@@ -6,30 +6,31 @@ import api from '@/utils/api';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { UploadCloud, Eye, EyeOff } from 'lucide-react';
+import Swal from 'sweetalert2';
 
 export default function ProfilePage() {
-  const { user, token, logout, refreshProfile } = useAuth();
+  const { user, token, logout, refreshProfile, loading } = useAuth();
   const router = useRouter();
 
   const [name, setName] = useState('');
   const [theme, setTheme] = useState('light');
   const [avatar, setAvatar] = useState('default-avatar.png');
   const [customAvatar, setCustomAvatar] = useState<File | null>(null);
-
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  const [loading, setLoading] = useState(false);
+  const [loadingSave, setLoadingSave] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
-    refreshProfile();
-  }, [refreshProfile]);
+    const tokenInStorage = localStorage.getItem('token');
+    if (!loading && !user && !tokenInStorage) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
 
   useEffect(() => {
     if (user) {
@@ -46,15 +47,13 @@ export default function ProfilePage() {
   };
 
   const handleSave = async () => {
-    setLoading(true);
+    setLoadingSave(true);
     setMessage(null);
-
     try {
       let avatarUrl = avatar;
 
       if (customAvatar) {
         const { data: sig } = await api.get('/cloudinary/signature');
-
         const formData = new FormData();
         formData.append('file', customAvatar);
         formData.append('api_key', sig.api_key);
@@ -65,34 +64,25 @@ export default function ProfilePage() {
 
         const cloudRes = await fetch(
           `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
-          {
-            method: 'POST',
-            body: formData,
-          }
+          { method: 'POST', body: formData }
         );
 
         const cloudData = await cloudRes.json();
         if (!cloudRes.ok) throw new Error(cloudData.error?.message || 'Cloudinary upload failed');
-
         avatarUrl = cloudData.secure_url;
         setAvatar(avatarUrl);
       }
 
-      await api.put(
-        '/user/profile',
-        { name, avatar: avatarUrl, theme },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await api.put('/user/profile', { name, avatar: avatarUrl, theme }, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       setMessage({ type: 'success', text: 'Profile updated successfully!' });
       await refreshProfile();
     } catch (err: any) {
-      setMessage({
-        type: 'error',
-        text: err.message || 'Failed to update profile.',
-      });
+      setMessage({ type: 'error', text: err.message || 'Failed to update profile.' });
     } finally {
-      setLoading(false);
+      setLoadingSave(false);
     }
   };
 
@@ -103,16 +93,10 @@ export default function ProfilePage() {
     }
 
     try {
-      const payload =
-        user?.provider === 'google'
-          ? { newPassword }
-          : { currentPassword, newPassword };
-
-      const res = await api.put(
-        '/user/password',
-        payload,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const payload = user?.provider === 'google' ? { newPassword } : { currentPassword, newPassword };
+      const res = await api.put('/user/password', payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       if (res.data?.token && res.data?.user) {
         localStorage.setItem('token', res.data.token);
@@ -124,13 +108,7 @@ export default function ProfilePage() {
       setNewPassword('');
       setConfirmPassword('');
     } catch (err: any) {
-      setMessage({
-        type: 'error',
-        text:
-          err.response?.data?.message ||
-          err.response?.data?.error ||
-          'Failed to update password',
-      });
+      setMessage({ type: 'error', text: err.response?.data?.message || err.message || 'Failed to update password' });
     }
   };
 
@@ -139,11 +117,52 @@ export default function ProfilePage() {
     router.push('/login');
   };
 
+  const handleDeleteAccount = async () => {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: 'This will permanently delete your account.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#aaa',
+      confirmButtonText: 'Yes, delete it!',
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await api.delete('/user/delete', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        await Swal.fire({
+          icon: 'success',
+          title: 'Account Deleted',
+          text: 'Your account has been deleted successfully.',
+          timer: 1500,
+          showConfirmButton: false,
+        });
+
+        logout();
+        router.push('/');
+      } catch (err: any) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: err.response?.data?.message || 'Something went wrong.',
+        });
+      }
+    }
+  };
+
   const displayAvatar = customAvatar
     ? URL.createObjectURL(customAvatar)
     : avatar.startsWith('http')
     ? avatar
     : `/images/${avatar || 'default-avatar.png'}`;
+
+  if (loading || (!user && token)) {
+    return <p className="text-center mt-10 text-gray-500">Loading profile...</p>;
+  }
 
   return (
     <div className="p-8 min-h-screen bg-gradient-to-br from-purple-50 to-white flex flex-col items-center">
@@ -151,13 +170,7 @@ export default function ProfilePage() {
         <h1 className="text-3xl font-bold text-purple-700 mb-6 text-center">Your Profile</h1>
 
         {message && (
-          <div
-            className={`mb-4 p-3 rounded-lg text-center font-semibold ${
-              message.type === 'success'
-                ? 'bg-green-100 text-green-700'
-                : 'bg-red-100 text-red-700'
-            }`}
-          >
+          <div className={`mb-4 p-3 rounded-lg text-center font-semibold ${message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
             {message.text}
           </div>
         )}
@@ -169,6 +182,7 @@ export default function ProfilePage() {
             width={120}
             height={120}
             className="rounded-full border-4 border-purple-500 mb-4 object-cover shadow-lg"
+            priority
           />
           <div className="relative text-center">
             <input
@@ -227,59 +241,38 @@ export default function ProfilePage() {
 
         <button
           onClick={handleSave}
-          disabled={loading}
+          disabled={loadingSave}
           className={`w-full py-3 rounded-lg text-white font-semibold transition ${
-            loading ? 'bg-gray-400' : 'bg-purple-600 hover:bg-purple-700'
+            loadingSave ? 'bg-gray-400' : 'bg-purple-600 hover:bg-purple-700'
           }`}
         >
-          {loading ? 'Saving...' : 'Save Changes'}
+          {loadingSave ? 'Saving...' : 'Save Changes'}
         </button>
 
         {user?.provider !== 'google' || user?.password ? (
           <div className="mt-8 border-t pt-6">
             <h2 className="text-xl font-semibold mb-4 text-purple-700">Update Password</h2>
-
-            {[
-              {
-                value: currentPassword,
-                setter: setCurrentPassword,
-                label: 'Current',
-                toggle: showCurrentPassword,
-                setToggle: setShowCurrentPassword,
-              },
-              {
-                value: newPassword,
-                setter: setNewPassword,
-                label: 'New',
-                toggle: showNewPassword,
-                setToggle: setShowNewPassword,
-              },
-              {
-                value: confirmPassword,
-                setter: setConfirmPassword,
-                label: 'Confirm New',
-                toggle: showConfirmPassword,
-                setToggle: setShowConfirmPassword,
-              },
-            ].map(({ value, setter, label, toggle, setToggle }, i) => (
-              <div key={i} className="relative mb-3">
-                <input
-                  type={toggle ? 'text' : 'password'}
-                  placeholder={`${label} Password`}
-                  value={value}
-                  onChange={(e) => setter(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-lg pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setToggle(!toggle)}
-                  className="absolute inset-y-0 right-3 flex items-center text-gray-500"
-                >
-                  {toggle ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
-              </div>
-            ))}
-
+            {[{ value: currentPassword, setter: setCurrentPassword, label: 'Current', toggle: showCurrentPassword, setToggle: setShowCurrentPassword },
+              { value: newPassword, setter: setNewPassword, label: 'New', toggle: showNewPassword, setToggle: setShowNewPassword },
+              { value: confirmPassword, setter: setConfirmPassword, label: 'Confirm New', toggle: showConfirmPassword, setToggle: setShowConfirmPassword }]
+              .map(({ value, setter, label, toggle, setToggle }, i) => (
+                <div key={i} className="relative mb-3">
+                  <input
+                    type={toggle ? 'text' : 'password'}
+                    placeholder={`${label} Password`}
+                    value={value}
+                    onChange={(e) => setter(e.target.value)}
+                    className="w-full p-3 border border-gray-300 rounded-lg pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setToggle(!toggle)}
+                    className="absolute inset-y-0 right-3 flex items-center text-gray-500"
+                  >
+                    {toggle ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
+              ))}
             <button
               onClick={handlePasswordUpdate}
               className="bg-purple-600 text-white w-full py-2 rounded-lg hover:bg-purple-700"
@@ -298,6 +291,13 @@ export default function ProfilePage() {
           className="w-full mt-6 py-3 rounded-lg bg-red-500 hover:bg-red-600 text-white font-semibold"
         >
           Logout
+        </button>
+
+        <button
+          onClick={handleDeleteAccount}
+          className="w-full mt-4 py-3 rounded-lg bg-red-700 hover:bg-red-800 text-white font-semibold"
+        >
+          Delete Account
         </button>
       </div>
     </div>

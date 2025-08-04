@@ -4,13 +4,12 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/utils/api';
 import Image from 'next/image';
-import Link from 'next/link';
 import SelfAssessmentModal from '@/components/SelfAssessmentModal';
-import { useAuth } from '@/context/AuthContext'; // ✅ Import context
+import { useAuth } from '@/context/AuthContext';
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { refreshProfile } = useAuth(); // ✅ Get the refresh function
+  const { refreshProfile } = useAuth();
 
   const [dashboard, setDashboard] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -45,7 +44,7 @@ export default function DashboardPage() {
         localStorage.setItem('selfAssessmentCompleted', hasCompleted ? 'true' : 'false');
         setShowSelfAssessment(!hasCompleted);
 
-        await refreshProfile(); // ✅ Ensure latest user context
+        await refreshProfile();
       } catch (err) {
         console.error('❌ Failed to load dashboard or self-assessment:', err);
         setError(true);
@@ -57,6 +56,15 @@ export default function DashboardPage() {
 
     fetchDashboard();
   }, [router, shouldRefresh, refreshProfile]);
+
+  const handleGoToProfile = async () => {
+    try {
+      await refreshProfile(); // Make sure user is loaded before navigating
+      router.push('/profile');
+    } catch {
+      router.push('/login');
+    }
+  };
 
   if (loading) {
     return <p className="text-center mt-10 text-gray-500">Loading your dashboard...</p>;
@@ -75,9 +83,7 @@ export default function DashboardPage() {
   } = dashboard;
 
   const displayName = user.name || 'User';
-  const avatarSrc = user.avatar?.startsWith('http')
-    ? user.avatar
-    : '/images/default-avatar.png';
+  const avatarSrc = user.avatar?.startsWith('http') ? user.avatar : '/images/default-avatar.png';
 
   const progressPercentage =
     stats.nextLevelXP && stats.nextLevelXP > 0
@@ -99,15 +105,19 @@ export default function DashboardPage() {
             Here's how you're progressing.
           </p>
         </div>
-        <Link href="/profile" title="Update your profile">
+        <button
+          onClick={handleGoToProfile}
+          title="Update your profile"
+          className="rounded-full border-4 border-indigo-500 shadow-md hover:scale-105 transition-transform"
+        >
           <Image
             src={avatarSrc}
             alt="User Avatar"
             width={90}
             height={90}
-            className="rounded-full border-4 border-indigo-500 shadow-md hover:scale-105 transition-transform"
+            className="rounded-full"
           />
-        </Link>
+        </button>
       </div>
 
       <div className="flex justify-center mb-6">
@@ -127,12 +137,12 @@ export default function DashboardPage() {
         <p className="text-gray-600 dark:text-gray-300 mt-2">
           Complete a scenario to level up your confidence.
         </p>
-        <Link
-          href="/scenarios"
+        <button
+          onClick={() => router.push('/scenarios')}
           className="inline-block mt-4 bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg shadow"
         >
           Practice now
-        </Link>
+        </button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
@@ -142,9 +152,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="bg-white dark:bg-gray-700 p-4 rounded-xl shadow mb-8">
-        <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">
-          XP Progress
-        </h3>
+        <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">XP Progress</h3>
         <div className="w-full bg-gray-200 dark:bg-gray-600 h-3 rounded-full">
           <div
             className="bg-indigo-500 h-3 rounded-full"
@@ -156,10 +164,7 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      <div className="bg-white dark:bg-gray-700 p-6 rounded-xl shadow mb-8">
-        <h3 className="text-lg font-semibold text-indigo-600 dark:text-indigo-300 mb-2">
-          Suggestions
-        </h3>
+      <Section title="Suggestions">
         <ul className="list-disc list-inside text-gray-600 dark:text-gray-300">
           {progress.completedScenariosCount === 0 ? (
             <li>Start your first scenario to earn XP!</li>
@@ -171,12 +176,9 @@ export default function DashboardPage() {
             </>
           )}
         </ul>
-      </div>
+      </Section>
 
-      <div className="bg-white dark:bg-gray-700 p-6 rounded-xl shadow mb-8">
-        <h3 className="text-lg font-semibold text-indigo-600 dark:text-indigo-300 mb-4">
-          Your Badges
-        </h3>
+      <Section title="Your Badges">
         {stats.badges.length > 0 ? (
           <div className="flex flex-wrap gap-2">
             {stats.badges.map((badge: string, idx: number) => (
@@ -193,12 +195,9 @@ export default function DashboardPage() {
             No badges yet. Complete scenarios to earn some!
           </p>
         )}
-      </div>
+      </Section>
 
-      <div className="bg-white dark:bg-gray-700 p-6 rounded-xl shadow mb-8">
-        <h3 className="text-lg font-semibold text-purple-600 dark:text-purple-300 mb-4">
-          Your Goals
-        </h3>
+      <Section title="Your Goals" titleClass="text-purple-600 dark:text-purple-300">
         {goals.length > 0 ? (
           <ul className="list-disc list-inside text-gray-600 dark:text-gray-300">
             {goals.slice(0, 3).map((goal: any, index: number) => (
@@ -213,12 +212,9 @@ export default function DashboardPage() {
             No goals set yet. Set one today!
           </p>
         )}
-      </div>
+      </Section>
 
-      <div className="bg-white dark:bg-gray-700 p-6 rounded-xl shadow mb-8">
-        <h3 className="text-lg font-semibold text-indigo-600 dark:text-indigo-300 mb-4">
-          Recent Scenarios
-        </h3>
+      <Section title="Recent Scenarios">
         {progress.recentScenarios.length > 0 ? (
           <ul className="list-disc list-inside text-gray-600 dark:text-gray-300">
             {progress.recentScenarios.map((scenario: string, index: number) => (
@@ -230,7 +226,7 @@ export default function DashboardPage() {
             No recent scenarios. Let's get started!
           </p>
         )}
-      </div>
+      </Section>
 
       {messages.length > 0 && (
         <div className="bg-indigo-50 dark:bg-indigo-900 border-l-4 border-indigo-500 text-indigo-700 dark:text-indigo-200 p-4 rounded">
@@ -245,5 +241,20 @@ const StatCard = ({ label, value }: { label: string; value: string | number }) =
   <div className="bg-white dark:bg-gray-700 rounded-xl p-6 shadow-md text-center">
     <h4 className="text-sm text-gray-500 dark:text-gray-300">{label}</h4>
     <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{value}</p>
+  </div>
+);
+
+const Section = ({
+  title,
+  children,
+  titleClass = 'text-indigo-600 dark:text-indigo-300',
+}: {
+  title: string;
+  children: React.ReactNode;
+  titleClass?: string;
+}) => (
+  <div className="bg-white dark:bg-gray-700 p-6 rounded-xl shadow mb-8">
+    <h3 className={`text-lg font-semibold mb-4 ${titleClass}`}>{title}</h3>
+    {children}
   </div>
 );
