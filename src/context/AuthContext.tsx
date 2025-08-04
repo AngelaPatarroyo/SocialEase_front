@@ -79,7 +79,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       api.defaults.headers.common['Authorization'] = `Bearer ${jwt}`;
     } catch (err) {
       console.error('❌ Failed to fetch profile:', err);
-      logout();
+
+      // Evita logout si venimos de un intento fallido de login
+      if (!window.location.pathname.includes('/login')) {
+        logout();
+      }
     } finally {
       setLoading(false);
     }
@@ -92,6 +96,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const storedToken = localStorage.getItem('token');
+    const loginErrorFlag = sessionStorage.getItem('login-error');
+
+    if (loginErrorFlag) {
+      sessionStorage.removeItem('login-error');
+      setLoading(false);
+      return;
+    }
+
     if (storedToken) {
       setToken(storedToken);
       fetchProfile(storedToken);

@@ -6,7 +6,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff } from 'lucide-react';
-import Swal from 'sweetalert2';
+import Swal, { SweetAlertOptions } from 'sweetalert2';
 import api from '@/utils/api';
 
 export default function LoginPage() {
@@ -18,16 +18,12 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const showAlert = async (options: any) => {
-    return await Swal.fire(options);
-  };
-
   useEffect(() => {
     const errorParam = searchParams.get('error');
     if (!errorParam) return;
 
     const showErrorAlert = async () => {
-      const alertOptions: any =
+      const alertOptions: SweetAlertOptions =
         errorParam === 'unregistered'
           ? {
               icon: 'error',
@@ -62,12 +58,17 @@ export default function LoginPage() {
 
     try {
       const res = await api.post('/auth/login', { email, password });
-      const { token, user } = res.data;
+      const { token, user, error, message } = res.data;
+
+      if (!token || !user || error || message === 'User not found') {
+        throw new Error(message || error || 'Login failed');
+      }
 
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
-      await showAlert({
+      await Swal.fire({
         icon: 'success',
         title: 'Welcome back!',
         text: `Glad to see you again, ${user.name.split(' ')[0]}!`,
@@ -79,25 +80,26 @@ export default function LoginPage() {
         router.push('/dashboard');
       }, 400);
     } catch (err: any) {
-      console.error('❌ Login error:', err.response?.data || err.message || err);
-
-      const errorMsg =
-        err?.response?.data?.message ||
-        err?.response?.data?.error ||
-        'Invalid email or password. Please try again.';
+      console.error('🔥 Login error:', err);
 
       setLoading(false);
+      delete api.defaults.headers.common['Authorization'];
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
 
-      // ✅ FIX: wrap SweetAlert in timeout to prevent disappearing bug
-      setTimeout(() => {
-        Swal.fire({
-          icon: 'error',
-          title: 'Login failed',
-          text: errorMsg,
-          allowOutsideClick: false,
-          allowEscapeKey: true,
-        });
-      }, 50);
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      await Swal.fire({
+        icon: 'error',
+        title: 'Login failed',
+        text:
+          err?.response?.data?.message ||
+          err?.response?.data?.error ||
+          err?.message ||
+          'Invalid email or password. Please try again.',
+        allowOutsideClick: false,
+        allowEscapeKey: true,
+      });
     }
   };
 
