@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
-import Step1Modal from './Step1Modal/Step1Modal';
+import Step1Modal from './step1/Modal';
 
 export default function GreetStrangerScenario() {
   const router = useRouter();
@@ -34,7 +34,7 @@ export default function GreetStrangerScenario() {
   const handleStart = (data: any) => {
     setPrepData(data);
     setShowModal(false);
-    router.push('/assessment/start?scenario=greet-a-stranger');
+    router.push('/scenarios/greet-a-stranger/step2');
   };
 
   useEffect(() => {
