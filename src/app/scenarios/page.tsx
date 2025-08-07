@@ -10,30 +10,35 @@ const scenarios: ScenarioCardProps[] = [
     level: 'Beginner',
     xp: 10,
     imageUrl: '/images/scenarios/intro.png',
+    slug: 'intro-to-socialease',
   },
   {
     title: 'Order at a Cafe',
     level: 'Beginner',
     xp: 20,
     imageUrl: '/images/scenarios/cafe.png',
+    slug: 'order-at-a-cafe',
   },
   {
     title: 'Greet a Stranger',
     level: 'Beginner',
     xp: 20,
     imageUrl: '/images/scenarios/stranger.png',
+    slug: 'greet-a-stranger',
   },
   {
     title: 'Say No Politely',
     level: 'Beginner',
     xp: 25,
     imageUrl: '/images/scenarios/say-no.png',
+    slug: 'say-no-politely',
   },
   {
     title: 'Start Small Talk',
     level: 'Beginner',
     xp: 25,
     imageUrl: '/images/scenarios/smalltalk.png',
+    slug: 'start-small-talk',
   },
   {
     title: 'Join Group Conversation',
@@ -41,18 +46,21 @@ const scenarios: ScenarioCardProps[] = [
     xp: 30,
     imageUrl: '/images/scenarios/group.png',
     isVR: true,
+    slug: 'join-group-conversation',
   },
   {
     title: 'Talk to a Co-worker',
     level: 'Intermediate',
     xp: 30,
     imageUrl: '/images/scenarios/coworker.png',
+    slug: 'talk-to-a-coworker',
   },
   {
     title: 'Give a Compliment',
     level: 'Intermediate',
     xp: 30,
     imageUrl: '/images/scenarios/compliment.png',
+    slug: 'give-a-compliment',
   },
   {
     title: 'Ask for Help in Public',
@@ -60,30 +68,35 @@ const scenarios: ScenarioCardProps[] = [
     xp: 30,
     imageUrl: '/images/scenarios/ask-help.png',
     isVR: true,
+    slug: 'ask-for-help-in-public',
   },
   {
     title: 'Speak Up in a Group',
     level: 'Intermediate',
     xp: 30,
     imageUrl: '/images/scenarios/speak-up.png',
+    slug: 'speak-up-in-a-group',
   },
   {
     title: 'Make a Phone Call',
     level: 'Advanced',
     xp: 35,
     imageUrl: '/images/scenarios/phone.png',
+    slug: 'make-a-phone-call',
   },
   {
     title: 'Handle Criticism',
     level: 'Advanced',
     xp: 35,
     imageUrl: '/images/scenarios/criticism.png',
+    slug: 'handle-criticism',
   },
   {
     title: 'Disagree Respectfully',
     level: 'Advanced',
     xp: 40,
     imageUrl: '/images/scenarios/disagree.png',
+    slug: 'disagree-respectfully',
   },
   {
     title: 'Mock Interview',
@@ -91,6 +104,7 @@ const scenarios: ScenarioCardProps[] = [
     xp: 45,
     imageUrl: '/images/scenarios/interview.png',
     isVR: true,
+    slug: 'mock-interview',
   },
   {
     title: 'Attend a Networking Event',
@@ -98,6 +112,7 @@ const scenarios: ScenarioCardProps[] = [
     xp: 45,
     imageUrl: '/images/scenarios/networking.png',
     isVR: true,
+    slug: 'attend-a-networking-event',
   },
 ];
 
@@ -117,7 +132,6 @@ export default function ScenariosPage() {
         Practice real-life social situations and gain XP as you grow!
       </p>
 
-      {/* Blob message on top center */}
       <div className="flex flex-col items-center mb-10">
         <motion.div
           initial={{ opacity: 0, y: -6 }}
@@ -145,7 +159,6 @@ export default function ScenariosPage() {
         </motion.div>
       </div>
 
-      {/* Cards */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
