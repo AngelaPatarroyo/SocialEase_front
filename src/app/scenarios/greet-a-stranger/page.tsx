@@ -2,135 +2,168 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
 import Image from 'next/image';
+import { AnimatePresence, motion } from 'framer-motion';
 import Step1Modal from './step1/Modal';
+import api from '@/utils/api';
 
 export default function GreetStrangerScenario() {
   const router = useRouter();
+
+  // UI
+  const [i, setI] = useState(0);
+  const [showStartButton, setShowStartButton] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [prepData, setPrepData] = useState(null);
+
+  // data
   const [scenario, setScenario] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState<string | null>(null);
 
   const blobMessages = [
-    "Hi there! Ready to try something new?",
-    "You're about to walk into a room and see someone you don’t know.",
-    "Imagine greeting them with a confident smile. Just practice — no pressure.",
-    "Each small step builds your courage.",
-    "Let’s begin together!"
+    'Hi there! Ready to try something new?',
+    "You’re about to walk into a room and see someone you don’t know.",
+    'Imagine greeting them with a confident smile. Just practice no pressure.',
   ];
 
-  const [currentMessage, setCurrentMessage] = useState(0);
-  const [showStartButton, setShowStartButton] = useState(false);
-
-  const handleNextMessage = () => {
-    if (currentMessage < blobMessages.length - 1) {
-      setCurrentMessage((prev) => prev + 1);
-    } else {
-      setShowStartButton(true);
-    }
+  const handleNext = () => {
+    setI(prev => {
+      const next = Math.min(prev + 1, blobMessages.length - 1);
+      if (next === blobMessages.length - 1) setShowStartButton(true);
+      return next;
+    });
   };
 
-  const handleStart = (data: any) => {
-    setPrepData(data);
+  const handleStartScenario = () => setShowModal(true);
+
+  // When Step 1 modal finishes, go to Step 2 WITH scenarioId
+  const handleModalStart = () => {
     setShowModal(false);
-    router.push('/scenarios/greet-a-stranger/step2');
+    if (!scenario?._id) return;
+    router.push(`/scenarios/greet-a-stranger/step2?scenarioId=${scenario._id}`);
   };
 
   useEffect(() => {
-    const fetchScenario = async () => {
+    let cancelled = false;
+    (async () => {
       try {
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/scenarios`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        const json = await res.json();
-        const matched = json?.data?.find((s: any) => s.slug === 'greet-a-stranger');
-        if (matched) {
-          setScenario(matched);
-        } else {
-          console.warn('No matching scenario found for slug greet-a-stranger');
-        }
-      } catch (error) {
-        console.error('Error fetching scenario:', error);
+        setLoading(true);
+        // ✅ use axios helper -> hits http://localhost:4000/api/scenarios
+        const { data } = await api.get('/scenarios');
+        const list = data?.data || data;
+        const matched = Array.isArray(list)
+          ? list.find((s: any) => s.slug === 'greet-a-stranger')
+          : null;
+        if (!cancelled) setScenario(matched || null);
+      } catch (e: any) {
+        if (!cancelled) setErr(e?.response?.data?.message || 'Failed to load scenario.');
+      } finally {
+        if (!cancelled) setLoading(false);
       }
+    })();
+    return () => {
+      cancelled = true;
     };
-
-    fetchScenario();
   }, []);
+
+  // soft transition variants
+  const variants = {
+    initial: { opacity: 0, y: 6, filter: 'blur(2px)' },
+    animate: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.45, ease: 'easeOut' } },
+    exit:    { opacity: 0, y: -6, filter: 'blur(2px)', transition: { duration: 0.35, ease: 'easeIn' } },
+  };
 
   return (
     <main className="min-h-screen px-4 py-10 bg-gradient-to-br from-blue-50 via-indigo-50 to-white">
       {showModal && scenario && (
-        <Step1Modal onStart={handleStart} scenarioId={scenario._id} />
+        <Step1Modal onStart={handleModalStart} scenarioId={scenario._id} />
       )}
 
       <motion.h1
-        initial={{ opacity: 0, y: -10 }}
+        initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 1 }}
-        className="text-4xl md:text-5xl font-bold text-center text-indigo-800 mb-4"
+        transition={{ duration: 0.5 }}
+        className="text-4xl md:text-5xl font-bold text-center text-indigo-800 mb-8"
       >
         Greet a Stranger
       </motion.h1>
 
-      <div className="flex flex-col items-center mb-10">
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="relative bg-white border border-gray-200 px-4 py-3 rounded-xl shadow-md text-sm text-gray-700 text-center max-w-md"
-        >
-          {blobMessages[currentMessage]}
-          <div className="absolute left-1/2 transform -translate-x-1/2 top-full w-4 h-4 bg-white border-l border-b border-gray-200 rotate-45 -mt-1" />
-        </motion.div>
+      {loading && <p className="text-center text-gray-500">Loading…</p>}
+      {err && <p className="text-center text-red-600">{err}</p>}
 
-        <motion.div
-          initial={{ y: -10, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 1.3 }}
-          className="mt-4"
-        >
-          <Image
-            src="/images/mascot.png"
-            alt="Supportive Blob Character"
-            width={120}
-            height={120}
-            className="drop-shadow-md"
-          />
-        </motion.div>
+      {!loading && !err && (
+        <>
+          <div className="flex flex-col items-center gap-5 mb-10">
+            <div className="relative">
+              <div
+                className="relative bg-white border border-gray-200 rounded-2xl shadow-md max-w-xl w-fit mx-auto overflow-hidden"
+                style={{ padding: '16px 20px' }}
+              >
+                {/* Invisible sizer keeps height from jumping between messages */}
+                <p
+                  aria-hidden="true"
+                  className="invisible text-lg md:text-xl leading-relaxed text-gray-700 text-center break-words"
+                >
+                  {blobMessages[i]}
+                </p>
 
-        {!showStartButton && (
-          <button
-            onClick={handleNextMessage}
-            className="mt-4 text-indigo-600 font-medium hover:underline"
-          >
-            Next
-          </button>
-        )}
-      </div>
+                {/* Animated text on top */}
+                <div className="absolute inset-0 flex items-center justify-center px-5">
+                  <AnimatePresence mode="wait">
+                    <motion.p
+                      key={i}
+                      variants={variants}
+                      initial="initial"
+                      animate="animate"
+                      exit="exit"
+                      className="text-lg md:text-xl leading-relaxed text-gray-700 text-center break-words"
+                    >
+                      {blobMessages[i]}
+                    </motion.p>
+                  </AnimatePresence>
+                </div>
 
-      <div className="flex justify-center mb-8">
-        <Image
-          src="/images/scenarios/stranger.png"
-          alt="Greet a Stranger"
-          width={300}
-          height={300}
-          className="rounded-xl shadow-lg"
-        />
-      </div>
+                <div className="absolute left-1/2 -translate-x-1/2 top-full w-6 h-6 bg-white border-l border-b border-gray-200 rotate-45 -mt-3" />
+              </div>
+            </div>
 
-      {showStartButton && scenario && (
-        <div className="flex justify-center">
-          <button
-            onClick={() => setShowModal(true)}
-            className="bg-indigo-600 text-white px-6 py-3 rounded-xl hover:bg-indigo-700 transition font-semibold"
-          >
-            Click to Start Scenario
-          </button>
-        </div>
+            <Image
+              src="/images/mascot.png"
+              alt="Supportive Blob Character"
+              width={128}
+              height={128}
+              className="drop-shadow"
+            />
+
+            {!showStartButton ? (
+              <button
+                onClick={handleNext}
+                className="mt-1 px-6 py-2.5 bg-indigo-600 text-white rounded-full shadow hover:bg-indigo-700 transition-colors duration-200"
+              >
+                Next
+              </button>
+            ) : (
+              <button
+                onClick={handleStartScenario}
+                disabled={!scenario?._id}
+                className="mt-1 px-6 py-2.5 bg-emerald-600 text-white rounded-full shadow hover:bg-emerald-700 transition-colors duration-200 disabled:opacity-60"
+              >
+                Start Scenario
+              </button>
+            )}
+          </div>
+
+          <div className="flex justify-center">
+            <Image
+              src="/images/scenarios/stranger.png"
+              alt="Greet a Stranger"
+              width={320}
+              height={320}
+              className="rounded-xl shadow-lg"
+              priority
+            />
+          </div>
+        </>
       )}
     </main>
   );

@@ -9,6 +9,8 @@ import { Eye, EyeOff } from 'lucide-react';
 import Swal, { SweetAlertOptions } from 'sweetalert2';
 import api from '@/utils/api';
 
+const API_BASE = (process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:4000').replace(/\/+$/, '');
+
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -17,6 +19,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   useEffect(() => {
     const errorParam = searchParams.get('error');
@@ -25,25 +28,12 @@ export default function LoginPage() {
     const showErrorAlert = async () => {
       const alertOptions: SweetAlertOptions =
         errorParam === 'unregistered'
-          ? {
-              icon: 'error',
-              title: 'Account not registered',
-              text: 'This Google account is not registered. Please sign up first.',
-            }
+          ? { icon: 'error', title: 'Account not registered', text: 'This Google account is not registered. Please sign up first.' }
           : errorParam === 'server'
-          ? {
-              icon: 'error',
-              title: 'Login failed',
-              text: 'There was a problem with Google login. Please try again.',
-            }
-          : {
-              icon: 'error',
-              title: 'Login failed',
-              text: decodeURIComponent(errorParam),
-            };
+          ? { icon: 'error', title: 'Login failed', text: 'There was a problem with Google login. Please try again.' }
+          : { icon: 'error', title: 'Login failed', text: decodeURIComponent(errorParam) };
 
       await Swal.fire(alertOptions);
-
       const url = new URL(window.location.href);
       url.searchParams.delete('error');
       window.history.replaceState({}, '', url.toString());
@@ -76,19 +66,15 @@ export default function LoginPage() {
         showConfirmButton: false,
       });
 
-      setTimeout(() => {
-        router.push('/dashboard');
-      }, 400);
+      setTimeout(() => router.push('/dashboard'), 400);
     } catch (err: any) {
       console.error('🔥 Login error:', err);
-
       setLoading(false);
       delete api.defaults.headers.common['Authorization'];
       localStorage.removeItem('token');
       localStorage.removeItem('user');
 
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
+      await new Promise((r) => setTimeout(r, 100));
       await Swal.fire({
         icon: 'error',
         title: 'Login failed',
@@ -103,8 +89,11 @@ export default function LoginPage() {
     }
   };
 
+  // FRONTEND-ONLY FIX: point to your existing backend route
   const handleGoogleLogin = () => {
-    window.location.href = `${process.env.NEXT_PUBLIC_API_BASE}/auth/google?mode=login`;
+    setGoogleLoading(true);
+    const url = `${API_BASE}/api/auth/google?mode=login`;
+    window.location.assign(url);
   };
 
   return (
@@ -178,10 +167,11 @@ export default function LoginPage() {
 
         <button
           onClick={handleGoogleLogin}
-          className="w-full flex items-center justify-center gap-3 border border-gray-300 rounded-lg py-3 font-semibold hover:bg-gray-50 transition"
+          disabled={googleLoading}
+          className="w-full flex items-center justify-center gap-3 border border-gray-300 rounded-lg py-3 font-semibold hover:bg-gray-50 transition disabled:opacity-60"
         >
           <Image src="/images/google-icon.png" alt="Google" width={20} height={20} />
-          Sign in with Google
+          {googleLoading ? 'Redirecting…' : 'Sign in with Google'}
         </button>
 
         <p className="text-sm text-gray-500 mt-6">

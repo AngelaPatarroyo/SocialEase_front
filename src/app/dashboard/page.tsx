@@ -125,7 +125,6 @@ export default function DashboardPage() {
   const displayName = user.name || 'User';
   const avatarSrc = user.avatar?.startsWith?.('http') ? user.avatar : '/images/default-avatar.png';
 
-  // ✅ Frontend XP → Level + progress
   const xp = Math.max(0, Number(stats.xp || 0));
   const level = calculateLevelFromXP(xp);
   const xpForNextLevel = 100;

@@ -1,9 +1,13 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 
+// ===== Scenario identifier (use slug) =====
+const SCENARIO_SLUG = 'greet-a-stranger';
+
+// ===== Script =====
 const dialogue = [
   {
     prompt: 'You approach a stranger near the coffee machine...',
@@ -53,9 +57,9 @@ const dialogue = [
       { label: '“We’ll see.”', reply: 'Sam says: “Alright, take care!”' },
     ],
   },
-];
+] as const;
 
-// Voice lines for each prompt
+// ===== Audio maps =====
 const voiceMap: Record<number, string> = {
   0: '/audio/intro.mp3',
   1: '/audio/hi-there.mp3',
@@ -65,14 +69,13 @@ const voiceMap: Record<number, string> = {
   5: '/audio/chat-again.mp3',
 };
 
-// Voice lines for replies (turn-responseIndex)
 const replyVoiceMap: Record<string, string> = {
   '1-0': '/audio/lucky-timing.mp3',
   '1-1': '/audio/machine-slow.mp3',
   '1-2': '',
 
   '2-0': '/audio/welcome.mp3',
-  '2-1': '', // optional: nod-understanding.mp3
+  '2-1': '',
   '2-2': '/audio/makes-sense.mp3',
 
   '3-0': '/audio/nice-to-meet-you.mp3',
@@ -83,17 +86,28 @@ const replyVoiceMap: Record<string, string> = {
   '4-1': '/audio/no-pressure.mp3',
   '4-2': '/audio/totally-fine.mp3',
 
-  '5-0': '', // Sam smiles genuinely
-  '5-1': '', // Sam nods
+  '5-0': '',
+  '5-1': '',
   '5-2': '/audio/take-care.mp3',
 };
+
+// ===== Timing knobs =====
+const PRE_PROMPT_DELAY_MS = 600;   // pause before each prompt voice
+const PRE_REPLY_DELAY_MS  = 1200;  // pause before reply voice (user reads first)
+const POST_REPLY_EXTRA_MS = 600;   // extra pause after reply audio
+const MAX_REPLY_FALLBACK  = 2600;  // fallback max wait if audio has no duration
 
 export default function Step2Conversation() {
   const [turn, setTurn] = useState(0);
   const [choice, setChoice] = useState<number | null>(null);
+  const [isBusy, setIsBusy] = useState(false);
   const router = useRouter();
-  const cafeAudioRef = useRef<HTMLAudioElement | null>(null);
 
+  // Audio refs
+  const cafeAudioRef = useRef<HTMLAudioElement | null>(null);
+  const currentVoiceRef = useRef<HTMLAudioElement | null>(null);
+
+  // Ambient café loop
   useEffect(() => {
     const cafeAudio = new Audio('/audio/cafe-ambience.mp3');
     cafeAudio.loop = true;
@@ -101,47 +115,98 @@ export default function Step2Conversation() {
     cafeAudioRef.current = cafeAudio;
     cafeAudio.play().catch(() => {});
     return () => {
-      cafeAudio.pause();
-      cafeAudio.currentTime = 0;
+      try {
+        cafeAudio.pause();
+        cafeAudio.currentTime = 0;
+      } catch {}
     };
   }, []);
 
-  // Play voice line when prompt appears
-  useEffect(() => {
-    const voiceSrc = voiceMap[turn];
-    if (voiceSrc) {
-      const voice = new Audio(voiceSrc);
-      voice.volume = 1;
-      voice.play().catch(() => {});
+  // Helpers
+  const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+  const stopCurrentVoice = () => {
+    const cur = currentVoiceRef.current;
+    if (cur) {
+      try {
+        cur.pause();
+        cur.currentTime = 0;
+      } catch {}
+      currentVoiceRef.current = null;
     }
+  };
+
+  const playVoice = (src: string, fallbackMs = MAX_REPLY_FALLBACK) =>
+    new Promise<void>((resolve) => {
+      if (!src) return setTimeout(resolve, fallbackMs);
+
+      stopCurrentVoice();
+
+      const a = new Audio(src);
+      a.volume = 1;
+      currentVoiceRef.current = a;
+
+      const cleanup = () => {
+        a.removeEventListener('ended', onEnd);
+        a.removeEventListener('error', onErr);
+        if (currentVoiceRef.current === a) currentVoiceRef.current = null;
+      };
+      const onEnd = () => { cleanup(); resolve(); };
+      const onErr = () => { cleanup(); setTimeout(resolve, fallbackMs); };
+
+      a.addEventListener('ended', onEnd);
+      a.addEventListener('error', onErr);
+      a.play().catch(() => { cleanup(); setTimeout(resolve, fallbackMs); });
+    });
+
+  // Play prompt voice when a new prompt appears
+  useEffect(() => {
+    let canceled = false;
+    (async () => {
+      const promptSrc = voiceMap[turn];
+      await delay(PRE_PROMPT_DELAY_MS);
+      if (!canceled && promptSrc) await playVoice(promptSrc, 1800);
+    })();
+    return () => {
+      canceled = true;
+      stopCurrentVoice();
+    };
   }, [turn]);
 
-  // Play reply voice when user selects a response
-  useEffect(() => {
-    if (choice !== null) {
-      const replyKey = `${turn}-${choice}`;
-      const replyVoice = replyVoiceMap[replyKey];
-      if (replyVoice) {
-        const audio = new Audio(replyVoice);
-        audio.volume = 1;
-        audio.play().catch(() => {});
-      }
-    }
-  }, [choice, turn]);
-
-  const handleChoice = (idx: number) => {
+  // Handle user choice
+  const handleChoice = async (idx: number) => {
+    if (isBusy || choice !== null) return;
+    setIsBusy(true);
     setChoice(idx);
-    setTimeout(() => {
-      if (turn < dialogue.length - 1) {
-        setTurn((t) => t + 1);
-        setChoice(null);
-      } else {
-        const goodbye = new Audio('/audio/goodbye.mp3');
-        goodbye.volume = 0.8;
-        goodbye.play().catch(() => {});
-        router.push('/scenarios/greet-a-stranger/step3');
-      }
-    }, 2400);
+
+    const replyKey = `${turn}-${idx}`;
+    const replySrc = replyVoiceMap[replyKey] || '';
+
+    await delay(PRE_REPLY_DELAY_MS);
+    await playVoice(replySrc, MAX_REPLY_FALLBACK);
+    await delay(POST_REPLY_EXTRA_MS);
+
+    if (turn < dialogue.length - 1) {
+      setTurn((t) => t + 1);
+      setChoice(null);
+      setIsBusy(false);
+    } else {
+      // Finish: stop audio then go to Step 3 with the slug
+      try {
+        stopCurrentVoice();
+        if (cafeAudioRef.current) {
+          cafeAudioRef.current.pause();
+          cafeAudioRef.current.currentTime = 0;
+        }
+      } catch {}
+
+      const goodbye = new Audio('/audio/goodbye.mp3');
+      goodbye.volume = 0.8;
+      goodbye.play().catch(() => {});
+
+      // IMPORTANT: pass the slug, not an ObjectId placeholder
+      router.push(`/scenarios/greet-a-stranger/step3?scenario=${encodeURIComponent(SCENARIO_SLUG)}`);
+    }
   };
 
   return (
@@ -169,7 +234,8 @@ export default function Step2Conversation() {
               <button
                 key={idx}
                 onClick={() => handleChoice(idx)}
-                className="w-full py-3 px-5 border border-indigo-300 rounded-xl bg-white hover:bg-indigo-100 text-indigo-800 text-left font-medium transition shadow-sm"
+                disabled={isBusy}
+                className="w-full py-3 px-5 border border-indigo-300 rounded-xl bg-white hover:bg-indigo-100 disabled:opacity-60 text-indigo-800 text-left font-medium transition shadow-sm"
               >
                 {r.label}
               </button>

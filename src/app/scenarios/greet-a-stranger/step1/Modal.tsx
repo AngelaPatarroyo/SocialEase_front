@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import api from '@/utils/api';
 
 interface Step1ModalProps {
   onStart: (data: any) => void;
@@ -9,12 +10,11 @@ interface Step1ModalProps {
 }
 
 export default function Step1Modal({ onStart, scenarioId }: Step1ModalProps) {
-  const [mood, setMood] = useState(2); // scale 0–4
+  const [mood, setMood] = useState(2); // 0–4
   const [intention, setIntention] = useState('');
   const [loading, setLoading] = useState(false);
 
   const moods = ['😣', '😕', '😐', '🙂', '😄'];
-
   const intentions = [
     'Just try something new',
     'Practice confidence',
@@ -23,57 +23,43 @@ export default function Step1Modal({ onStart, scenarioId }: Step1ModalProps) {
   ];
 
   const handleSubmit = async () => {
+    if (!intention) return;
+    if (!/^[a-f0-9]{24}$/i.test(scenarioId)) {
+      alert('Invalid scenario. Please refresh and try again.');
+      return;
+    }
+
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        alert('No token found. Please log in again.');
-        return;
-      }
-
-      const payload = JSON.stringify({
+      // uses axios helper -> adds baseURL (/api) + Authorization header
+      await api.post('/scenarios/preparation', {
         mood,
         intention,
         scenarioId,
       });
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/scenarios/preparation`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: payload,
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        alert(`Failed to save: ${result?.message || 'Unknown error'}`);
-        return;
-      }
-
       onStart({ mood, intention });
-    } catch (err) {
-      alert('Something went wrong. Try again.');
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        'Could not save your preparation. Please try again.';
+      alert(msg);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <motion.div
         initial={{ opacity: 0, y: -30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
         className="bg-white p-6 md:p-8 rounded-2xl shadow-xl w-full max-w-lg max-h-[95vh] overflow-y-auto"
       >
-        <h2 className="text-2xl font-bold text-center text-indigo-700 mb-4">
-          Before we begin...
-        </h2>
+        <h2 className="text-2xl font-bold text-center text-indigo-700 mb-4">Before we begin...</h2>
 
-        {/* Mood Selector */}
         <div className="mb-6 text-center">
           <p className="font-medium mb-2">How are you feeling right now?</p>
           <div className="flex justify-center space-x-3">
@@ -89,7 +75,6 @@ export default function Step1Modal({ onStart, scenarioId }: Step1ModalProps) {
           </div>
         </div>
 
-        {/* Intention Selector */}
         <div className="mb-6">
           <p className="font-medium mb-3 text-center">What would you like to get out of this?</p>
           <div className="space-y-2">
