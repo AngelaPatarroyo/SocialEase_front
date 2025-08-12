@@ -66,7 +66,18 @@ export default function LoginPage() {
         showConfirmButton: false,
       });
 
-      setTimeout(() => router.push('/dashboard'), 400);
+      // Check if user has completed self-assessment
+      try {
+        const saRes = await api.get('/self-assessment');
+        const hasSelfAssessment = saRes.data?.data && Array.isArray(saRes.data.data) && saRes.data.data.length > 0;
+        
+        // Always redirect to dashboard - the modal will appear automatically if needed
+        setTimeout(() => router.push('/dashboard'), 400);
+      } catch (error) {
+        // If we can't check self-assessment status, default to dashboard
+        console.warn('Could not check self-assessment status, redirecting to dashboard');
+        setTimeout(() => router.push('/dashboard'), 400);
+      }
     } catch (err: any) {
       console.error('🔥 Login error:', err);
       setLoading(false);

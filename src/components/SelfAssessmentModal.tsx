@@ -5,6 +5,7 @@ import Step1 from './SelfAssessment/Step1';
 import Step2 from './SelfAssessment/Step2';
 import Step3 from './SelfAssessment/Step3';
 import Swal from 'sweetalert2';
+import api from '@/utils/api';
 
 interface SelfAssessmentModalProps {
   onSuccess?: (payload: any) => void | Promise<void>; // send payload to parent
@@ -16,6 +17,7 @@ export default function SelfAssessmentModal({ onSuccess, onClose }: SelfAssessme
   const [profileData, setProfileData] = useState<any>(null);
   const [confidenceBefore, setConfidenceBefore] = useState<number | null>(null);
   const [completed, setCompleted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const backdropRef = useRef<HTMLDivElement | null>(null);
 
   // Helpers
@@ -104,9 +106,41 @@ export default function SelfAssessmentModal({ onSuccess, onClose }: SelfAssessme
         profileData.communicationConfidence ?? profileData.conversationConfidence,
     };
 
-    setCompleted(true);
-    await onSuccess?.(payload);
-    onClose?.();
+    setSubmitting(true);
+    try {
+      // Submit self-assessment to backend
+      const token = localStorage.getItem('token');
+      if (!token) {
+        warn('Authentication Error', 'Please log in again.');
+        return;
+      }
+
+      await api.post('/self-assessment', payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      // Show success message with XP award
+      await Swal.fire({
+        title: 'Self-Assessment Complete! 🎉',
+        text: 'You earned 10 XP for completing your self-assessment!',
+        icon: 'success',
+        confirmButtonColor: '#4F46E5',
+      });
+
+      setCompleted(true);
+      await onSuccess?.(payload);
+      onClose?.();
+    } catch (error) {
+      console.error('Failed to submit self-assessment:', error);
+      await Swal.fire({
+        title: 'Submission Failed',
+        text: 'There was an error submitting your self-assessment. Please try again.',
+        icon: 'error',
+        confirmButtonColor: '#4F46E5',
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (completed) return null;
@@ -129,7 +163,8 @@ export default function SelfAssessmentModal({ onSuccess, onClose }: SelfAssessme
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+            disabled={submitting}
+            className="rounded-lg px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Close
           </button>
@@ -139,6 +174,14 @@ export default function SelfAssessmentModal({ onSuccess, onClose }: SelfAssessme
         {step === 1 && <Step1 onNext={handleDataCollected} />}
         {step === 2 && <Step2 onNext={handleConfidenceSelected} />}
         {step === 3 && <Step3 onSubmit={handleFinalSubmit} />}
+
+        {/* Loading state */}
+        {submitting && (
+          <div className="mt-4 text-center">
+            <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">Submitting your assessment...</p>
+          </div>
+        )}
       </div>
     </div>
   );

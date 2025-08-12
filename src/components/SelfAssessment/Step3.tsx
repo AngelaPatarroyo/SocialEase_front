@@ -12,13 +12,14 @@ export default function Step3({ onSubmit }: { onSubmit: (data: any) => void }) {
   });
 
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setSubmitted(true);
     const required = [
       'confidenceAfter',
@@ -34,7 +35,12 @@ export default function Step3({ onSubmit }: { onSubmit: (data: any) => void }) {
     });
 
     if (allFilled) {
-      onSubmit(data);
+      setSubmitting(true);
+      try {
+        await onSubmit(data);
+      } finally {
+        setSubmitting(false);
+      }
     } else {
       alert('Please complete all fields before submitting.');
     }
@@ -109,9 +115,17 @@ export default function Step3({ onSubmit }: { onSubmit: (data: any) => void }) {
 
       <button
         onClick={handleSubmit}
-        className="w-full mt-4 bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700 transition"
+        disabled={submitting}
+        className="w-full mt-4 bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
-        Submit Assessment
+        {submitting ? (
+          <>
+            <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+            Submitting...
+          </>
+        ) : (
+          'Submit Assessment'
+        )}
       </button>
     </div>
   );

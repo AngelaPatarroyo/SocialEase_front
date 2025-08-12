@@ -10,9 +10,11 @@ import * as Yup from 'yup';
 import { Eye, EyeOff } from 'lucide-react';
 import Swal from 'sweetalert2';
 import api from '@/utils/api';
+import { useAuth } from '@/context/AuthContext';
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { login } = useAuth();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -52,16 +54,45 @@ export default function RegisterPage() {
     onSubmit: async (values) => {
       setLoading(true);
       try {
+        // Register the user
         await api.post('/auth/register', {
           name: values.name,
           email: values.email,
           password: values.password,
         });
-        showAlert({
-          icon: 'success',
-          title: 'Account created!',
-          text: 'You can now log in to your new account.',
-        });
+
+        // Automatically log in the user after successful registration
+        try {
+          await login(values.email, values.password);
+          
+          // Show success message and redirect to dashboard (modal will appear automatically)
+          const result = await Swal.fire({
+            icon: 'success',
+            title: 'Account created successfully! 🎉',
+            text: 'Welcome to SocialEase! You\'ll be redirected to your dashboard where you can complete your self-assessment.',
+            confirmButtonColor: '#4F46E5',
+            confirmButtonText: 'Go to Dashboard',
+          });
+          
+          if (result.isConfirmed) {
+            router.push('/dashboard');
+          }
+          
+        } catch (loginErr: any) {
+          // If auto-login fails, show message to manually log in
+          const result = await Swal.fire({
+            icon: 'success',
+            title: 'Account created!',
+            text: 'Your account has been created successfully. Please log in to continue.',
+            confirmButtonColor: '#4F46E5',
+            confirmButtonText: 'Go to Login',
+          });
+          
+          if (result.isConfirmed) {
+            router.push('/login');
+          }
+        }
+        
         formik.resetForm();
       } catch (err: any) {
         showAlert({
@@ -76,7 +107,13 @@ export default function RegisterPage() {
   });
 
   const handleGoogleSignUp = () => {
-    window.location.href = `${process.env.NEXT_PUBLIC_API_BASE}/auth/google?mode=register`;
+    // Store a flag to indicate this is a new user registration
+    sessionStorage.setItem('new-user-registration', 'true');
+    
+    // Use the same endpoint pattern as the login page
+    const API_BASE = (process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:4000').replace(/\/+$/, '');
+    const url = `${API_BASE}/api/auth/google?mode=register`;
+    window.location.assign(url);
   };
 
   return (

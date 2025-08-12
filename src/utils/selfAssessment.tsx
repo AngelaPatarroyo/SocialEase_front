@@ -2,6 +2,7 @@
 
 // ---------- Types ----------
 export type Answers = {
+    practiceFrequency: string;
     confidenceBefore: number | null;
     confidenceAfter: number | null;
     primaryGoal: string;

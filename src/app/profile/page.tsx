@@ -5,8 +5,15 @@ import { useAuth } from '@/context/AuthContext';
 import api from '@/utils/api';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { UploadCloud, Eye, EyeOff } from 'lucide-react';
+import { UploadCloud, Eye, EyeOff, Shield, Key, Info } from 'lucide-react';
 import Swal from 'sweetalert2';
+
+interface PasswordStatus {
+  hasPassword: boolean;
+  canSetPassword: boolean;
+  requiresCurrentPassword: boolean;
+  authType: 'local' | 'google' | 'hybrid';
+}
 
 export default function ProfilePage() {
   const { user, token, logout, refreshProfile, loading } = useAuth();
@@ -23,7 +30,9 @@ export default function ProfilePage() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loadingSave, setLoadingSave] = useState(false);
+  const [loadingPassword, setLoadingPassword] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [passwordStatus, setPasswordStatus] = useState<PasswordStatus | null>(null);
 
   useEffect(() => {
     const tokenInStorage = localStorage.getItem('token');
@@ -39,6 +48,30 @@ export default function ProfilePage() {
       setAvatar(user.avatar || 'default-avatar.png');
     }
   }, [user]);
+
+  useEffect(() => {
+    if (token) {
+      fetchPasswordStatus();
+    }
+  }, [token]);
+
+  const fetchPasswordStatus = async () => {
+    try {
+      const response = await api.get('/user/password/status', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setPasswordStatus(response.data);
+    } catch (error) {
+      console.error('Failed to fetch password status:', error);
+      // Fallback to basic status based on user provider
+      setPasswordStatus({
+        hasPassword: !!user?.password,
+        canSetPassword: user?.provider === 'google',
+        requiresCurrentPassword: !!user?.password,
+        authType: user?.provider === 'google' ? 'google' : 'local'
+      });
+    }
+  };
 
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -92,8 +125,19 @@ export default function ProfilePage() {
       return;
     }
 
+    if (newPassword.length < 6) {
+      setMessage({ type: 'error', text: 'Password must be at least 6 characters long' });
+      return;
+    }
+
+    setLoadingPassword(true);
+    setMessage(null);
+
     try {
-      const payload = user?.provider === 'google' ? { newPassword } : { currentPassword, newPassword };
+      const payload = passwordStatus?.requiresCurrentPassword 
+        ? { currentPassword, newPassword } 
+        : { newPassword };
+
       const res = await api.put('/user/password', payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -107,8 +151,13 @@ export default function ProfilePage() {
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
+      
+      // Refresh password status
+      await fetchPasswordStatus();
     } catch (err: any) {
       setMessage({ type: 'error', text: err.response?.data?.message || err.message || 'Failed to update password' });
+    } finally {
+      setLoadingPassword(false);
     }
   };
 
@@ -159,6 +208,47 @@ export default function ProfilePage() {
     : avatar.startsWith('http')
     ? avatar
     : `/images/${avatar || 'default-avatar.png'}`;
+
+  const getPasswordStatusMessage = () => {
+    if (!passwordStatus) return '';
+    
+    if (passwordStatus.authType === 'google' && !passwordStatus.hasPassword) {
+      return 'You can set a password to enable email/password login alongside Google OAuth.';
+    }
+    
+    if (passwordStatus.authType === 'hybrid') {
+      return 'You have both Google OAuth and email/password authentication enabled.';
+    }
+    
+    if (passwordStatus.authType === 'local') {
+      return 'You can only login with your email and password.';
+    }
+    
+    return '';
+  };
+
+  const getPasswordStatusBadge = () => {
+    if (!passwordStatus) return null;
+    
+    const getBadgeColor = () => {
+      if (passwordStatus.authType === 'hybrid') return 'bg-green-100 text-green-800 border-green-200';
+      if (passwordStatus.authType === 'google') return 'bg-blue-100 text-blue-800 border-blue-200';
+      return 'bg-purple-100 text-purple-800 border-purple-200';
+    };
+
+    const getBadgeText = () => {
+      if (passwordStatus.authType === 'hybrid') return 'Dual Auth';
+      if (passwordStatus.authType === 'google') return 'Google OAuth';
+      return 'Local Auth';
+    };
+
+    return (
+      <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border text-sm font-medium ${getBadgeColor()}`}>
+        <Shield size={16} />
+        {getBadgeText()}
+      </div>
+    );
+  };
 
   if (loading || (!user && token)) {
     return <p className="text-center mt-10 text-gray-500">Loading profile...</p>;
@@ -249,42 +339,108 @@ export default function ProfilePage() {
           {loadingSave ? 'Saving...' : 'Save Changes'}
         </button>
 
-        {user?.provider !== 'google' || user?.password ? (
-          <div className="mt-8 border-t pt-6">
-            <h2 className="text-xl font-semibold mb-4 text-purple-700">Update Password</h2>
-            {[{ value: currentPassword, setter: setCurrentPassword, label: 'Current', toggle: showCurrentPassword, setToggle: setShowCurrentPassword },
-              { value: newPassword, setter: setNewPassword, label: 'New', toggle: showNewPassword, setToggle: setShowNewPassword },
-              { value: confirmPassword, setter: setConfirmPassword, label: 'Confirm New', toggle: showConfirmPassword, setToggle: setShowConfirmPassword }]
-              .map(({ value, setter, label, toggle, setToggle }, i) => (
-                <div key={i} className="relative mb-3">
-                  <input
-                    type={toggle ? 'text' : 'password'}
-                    placeholder={`${label} Password`}
-                    value={value}
-                    onChange={(e) => setter(e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setToggle(!toggle)}
-                    className="absolute inset-y-0 right-3 flex items-center text-gray-500"
-                  >
-                    {toggle ? <EyeOff size={20} /> : <Eye size={20} />}
-                  </button>
+        {/* Password Management Section */}
+        <div className="mt-8 border-t pt-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-purple-700">Password Management</h2>
+            {getPasswordStatusBadge()}
+          </div>
+
+          {passwordStatus && (
+            <div className="mb-4 p-4 bg-gray-50 rounded-lg border">
+              <div className="flex items-start gap-3">
+                <Info size={20} className="text-blue-600 mt-0.5 flex-shrink-0" />
+                <div className="text-sm text-gray-700">
+                  <p className="font-medium mb-1">Authentication Status</p>
+                  <p>{getPasswordStatusMessage()}</p>
+                  {passwordStatus.canSetPassword && !passwordStatus.hasPassword && (
+                    <p className="text-blue-600 font-medium mt-2">
+                      💡 You can set a password to enable email/password login!
+                    </p>
+                  )}
                 </div>
-              ))}
+              </div>
+            </div>
+          )}
+
+          {/* Password Form */}
+          <div className="space-y-3">
+            {passwordStatus?.requiresCurrentPassword && (
+              <div className="relative">
+                <input
+                  type={showCurrentPassword ? 'text' : 'password'}
+                  placeholder="Current Password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded-lg pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                  className="absolute inset-y-0 right-3 flex items-center text-gray-500"
+                >
+                  {showCurrentPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
+            )}
+
+            <div className="relative">
+              <input
+                type={showNewPassword ? 'text' : 'password'}
+                placeholder="New Password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowNewPassword(!showNewPassword)}
+                className="absolute inset-y-0 right-3 flex items-center text-gray-500"
+              >
+                {showNewPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
+
+            <div className="relative">
+              <input
+                type={showConfirmPassword ? 'text' : 'password'}
+                placeholder="Confirm New Password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute inset-y-0 right-3 flex items-center text-gray-500"
+              >
+                {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
+
             <button
               onClick={handlePasswordUpdate}
-              className="bg-purple-600 text-white w-full py-2 rounded-lg hover:bg-purple-700"
+              disabled={loadingPassword || !newPassword || newPassword !== confirmPassword}
+              className={`w-full py-3 rounded-lg text-white font-semibold transition flex items-center justify-center gap-2 ${
+                loadingPassword || !newPassword || newPassword !== confirmPassword
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-purple-600 hover:bg-purple-700'
+              }`}
             >
-              Update Password
+              {loadingPassword ? (
+                <>
+                  <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  Updating...
+                </>
+              ) : (
+                <>
+                  <Key size={18} />
+                  {passwordStatus?.hasPassword ? 'Update Password' : 'Set Password'}
+                </>
+              )}
             </button>
           </div>
-        ) : (
-          <div className="mt-8 border-t pt-6 text-center text-sm text-gray-500">
-            You signed up with Google. Set a password to allow email login.
-          </div>
-        )}
+        </div>
 
         <button
           onClick={handleLogout}

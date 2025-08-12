@@ -3,6 +3,8 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import api from '@/utils/api';
+import Swal from 'sweetalert2';
+import { SCENARIOS } from '@/utils/selfAssessment';
 
 export default function Step3Feedback() {
   const router = useRouter();
@@ -22,6 +24,13 @@ export default function Step3Feedback() {
   const [rating, setRating] = useState<number>(3);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Get scenario XP dynamically
+  const scenarioXP = useMemo(() => {
+    if (!scenarioParam) return 20; // fallback
+    const scenario = SCENARIOS.find(s => s.slug === scenarioParam);
+    return scenario?.xp || 20;
+  }, [scenarioParam]);
 
   // Redirect ONLY after params are ready
   useEffect(() => {
@@ -47,19 +56,35 @@ export default function Step3Feedback() {
         return;
       }
   
-      // 1) Feedback
+      // Submit feedback to backend
       console.log('[submit] POST /api/feedback', { scenarioId: scenarioParam, rating: numRating });
       const res1 = await api.post('/feedback', {
         scenarioId: scenarioParam,
         reflection: reflection.trim(),
         rating: numRating,
       });
-      console.log('[submit] feedback OK:', res1.status);
-  
-      // 2) Progress
+      console.log('[submit] feedback OK:', res1.status, res1.data);
+
+      // Update progress on backend
       console.log('[submit] POST /api/progress/update', { scenarioId: scenarioParam });
       const res2 = await api.post('/progress/update', { scenarioId: scenarioParam });
-      console.log('[submit] progress OK:', res2.status);
+      console.log('[submit] progress OK:', res2.status, res2.data);
+      
+      // Check if XP was awarded
+      if (res2.data?.xp) {
+        console.log('[submit] XP awarded by backend:', res2.data.xp);
+      } else {
+        console.log('[submit] No XP data in backend response');
+      }
+  
+      // Show success alert with XP earned
+      await Swal.fire({
+        title: 'Scenario Complete! 🎉',
+        text: `Great job! You earned ${scenarioXP} XP for completing this scenario.`,
+        icon: 'success',
+        confirmButtonColor: '#4F46E5',
+        confirmButtonText: 'Continue to Dashboard',
+      });
   
       router.push('/dashboard?toast=feedback_saved');
     } catch (err: any) {
@@ -119,9 +144,16 @@ export default function Step3Feedback() {
           <button
             type="submit"
             disabled={submitting || !reflection.trim() || !scenarioParam}
-            className="w-full py-3 rounded-xl bg-indigo-600 text-white font-semibold disabled:opacity-60"
+            className="w-full py-3 rounded-xl bg-indigo-600 text-white font-semibold disabled:opacity-60 flex items-center justify-center gap-2"
           >
-            {submitting ? 'Saving…' : 'Save feedback & finish'}
+            {submitting ? (
+              <>
+                <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                Saving...
+              </>
+            ) : (
+              'Save feedback & finish'
+            )}
           </button>
         </form>
       </div>
