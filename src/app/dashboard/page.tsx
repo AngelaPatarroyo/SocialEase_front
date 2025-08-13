@@ -3,10 +3,9 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
-import Swal from 'sweetalert2';
-import api from '@/utils/api';
 import { useAuth } from '@/context/AuthContext';
+import api from '@/utils/api';
+import Image from 'next/image';
 import AddGoalModal from '@/components/AddGoalModal';
 import SelfAssessmentModal from '@/components/SelfAssessmentModal';
 import {
@@ -16,6 +15,7 @@ import {
   type SelfAssessmentView,
 } from '@/utils/selfAssessment';
 import { motion, AnimatePresence } from 'framer-motion';
+import Swal from 'sweetalert2';
 
 const BADGE_CATALOG: Record<string, { name: string; image: string }> = {
   // XP Milestone Badges (100-1000 XP)
@@ -23,7 +23,7 @@ const BADGE_CATALOG: Record<string, { name: string; image: string }> = {
   momentum_builder: { name: 'Momentum Builder', image: '/images/badges/momentum-builder.png' },
   consistent_learner: { name: 'Consistent Learner', image: '/images/badges/consistem-builder.png' },
   dedicated_practitioner: { name: 'Dedicated Practitioner', image: '/images/badges/dedicated-p.png' },
-  halfway_hero: { name: 'Halfway Hero', image: '/images/badges/momentum-builder.png' },
+  halfway_hero: { name: 'Halfway Hero', image: '/images/badges/half-way.png' },
   strong_commitment: { name: 'Strong Commitment', image: '/images/badges/xp-explorer.png' },
   excellence_seeker: { name: 'Excellence Seeker', image: '/images/badges/consistem-builder.png' },
   mastery_approach: { name: 'Mastery Approach', image: '/images/badges/momentum-builder.png' },
@@ -64,7 +64,6 @@ export default function DashboardPage() {
   const router = useRouter();
   const sp = useSearchParams();
   const { refreshProfile } = useAuth();
-
   const [dashboard, setDashboard] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -86,19 +85,7 @@ export default function DashboardPage() {
     const xpUpdated = sp.get('xp_updated');
     
     if (toast === 'feedback_saved') {
-      // Show success message for completed scenario
-      Swal.fire({
-        title: 'Welcome Back! 🎉',
-        text: xpUpdated === 'true' 
-          ? 'Great job completing that scenario! Your XP has been updated locally.'
-          : 'Great job completing that scenario! Your progress has been saved.',
-        icon: 'success',
-        confirmButtonColor: '#4F46E5',
-        timer: 3000,
-        timerProgressBar: true,
-      });
-      
-      // Refresh dashboard data to show updated XP
+      // Refresh dashboard data to show updated XP (no duplicate notification needed)
       const refreshDashboard = async () => {
         try {
           const token = localStorage.getItem('token');
@@ -314,44 +301,107 @@ export default function DashboardPage() {
   const fallbackPool = SCENARIOS.filter(s => !picked.has(s.slug));
   const recommendedCards = [...primary, ...fallbackPool].slice(0, Math.min(DESIRED_COUNT, SCENARIOS.length));
 
-  const deleteGoal = async (goal: any) => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-
-    const title = String(goal.title || '').trim();
-    let id: string | null = goal._id || goal.id || goal.goalId || null;
-
-    const ok = await Swal.fire({ title: 'Delete goal?', icon: 'warning', showCancelButton: true });
-    if (!ok.isConfirmed) return;
-
+  const handleDeleteGoal = async (goalId: string) => {
     try {
-      if (id) {
-        await api.delete(`/goals/${id}`, { headers: { Authorization: `Bearer ${token}` } });
-      } else {
-        const all = await api.get('/goals', { headers: { Authorization: `Bearer ${token}` } });
-        const matches = (all.data?.data || []).filter(
-          (g: any) => String(g.title || '').toLowerCase() === title.toLowerCase()
-        );
-        if (!matches.length) {
-          await Swal.fire('Oops', 'Goal id not found for deletion.', 'info');
-          return;
-        }
-        await Promise.all(
-          matches.map((m: any) =>
-            api.delete(`/goals/${m._id}`, { headers: { Authorization: `Bearer ${token}` } })
-          )
-        );
-      }
+      // Show confirmation dialog
+      const confirmed = window.confirm('Are you sure you want to delete this goal?');
+      if (!confirmed) return;
 
+      await api.delete(`/goals/${goalId}`);
+      
+      Swal.fire({
+        title: 'Goal Deleted',
+        text: 'Your goal has been successfully removed.',
+        icon: 'success',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        background: '#4CAF50', // A green background for success
+        color: 'white',
+      });
+      
+      // Refresh dashboard data
+      const token = localStorage.getItem('token');
+      if (token) {
+        const fresh = await api.get('/user/dashboard', { headers: { Authorization: `Bearer ${token}` } });
+        setDashboard(fresh.data?.data ?? null);
+      }
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        Swal.fire({
+          title: 'Goal Not Found',
+          text: 'This goal may have already been deleted.',
+          icon: 'warning',
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 3000,
+          timerProgressBar: true,
+          background: '#FFC107', // An orange background for warning
+          color: 'white',
+        });
+      } else {
+        Swal.fire({
+          title: 'Delete Failed',
+          text: 'Could not delete goal. Please try again.',
+          icon: 'error',
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 3000,
+          timerProgressBar: true,
+          background: '#F44336', // A red background for error
+          color: 'white',
+        });
+      }
+    }
+  };
+
+  const handleUpdateProgress = async (goalId: string, newProgress: number) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      await api.put(`/goals/${goalId}/progress`, { progress: newProgress }, { headers: { Authorization: `Bearer ${token}` } });
+      
+      Swal.fire({
+        title: 'Progress Updated',
+        text: 'Your goal progress has been updated successfully.',
+        icon: 'success',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        background: '#4CAF50', // A green background for success
+        color: 'white',
+      });
+      
+      // Refresh dashboard data
       const fresh = await api.get('/user/dashboard', { headers: { Authorization: `Bearer ${token}` } });
       setDashboard(fresh.data?.data ?? null);
-    } catch (e) {
-      await Swal.fire('Error', 'Could not delete goal.', 'error');
+    } catch (error) {
+      Swal.fire({
+        title: 'Update Failed',
+        text: 'Could not update progress. Please try again.',
+        icon: 'error',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        background: '#F44336', // A red background for error
+        color: 'white',
+      });
     }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-white dark:from-gray-900 dark:to-gray-800 p-6 md:p-10">
+      {/* Notification Component */}
+      {/* Removed Notification component as per edit hint */}
+      
       {/* Badge Notification */}
       <AnimatePresence>
         {showBadgeNotification && newBadges.length > 0 && (
@@ -413,36 +463,41 @@ export default function DashboardPage() {
         )}
       </AnimatePresence>
 
-      {showSelfAssessment && (
-        <SelfAssessmentModal
-          onSuccess={async () => {
-            try {
-              const token = localStorage.getItem('token');
-              if (!token) return;
-              
-              // Refresh dashboard data to show updated XP
-              const fresh = await api.get('/user/dashboard', {
-                headers: { Authorization: `Bearer ${token}` },
-              });
-              setDashboard(fresh.data?.data ?? null);
-              
-              // Refresh self-assessment data
-              const saRes = await api.get('/self-assessment', {
-                headers: { Authorization: `Bearer ${token}` },
-              });
-              const list = extractList(saRes?.data);
-              setShowSelfAssessment(!(list.length > 0));
-              setSelfAssessment(list.length ? normalizeSelfAssessment(list[0]) : null);
-              
-              // Refresh user profile to get updated XP
+        {showSelfAssessment && (
+          <SelfAssessmentModal
+            onSuccess={async () => {
+              setShowSelfAssessment(false);
               await refreshProfile();
-            } catch (error) {
-              console.error('Failed to refresh dashboard after self-assessment:', error);
-            }
-          }}
-          onClose={() => setShowSelfAssessment(false)}
-        />
-      )}
+              // Refresh dashboard data
+              const token = localStorage.getItem('token');
+              if (token) {
+                const res = await api.get('/user/dashboard', {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                setDashboard(res.data?.data ?? null);
+              }
+            }}
+            onClose={() => setShowSelfAssessment(false)}
+          />
+        )}
+
+        {showAddGoal && (
+          <AddGoalModal
+            onClose={() => setShowAddGoal(false)}
+            onSuccess={() => {
+              setShowAddGoal(false);
+              // Refresh dashboard data
+              const token = localStorage.getItem('token');
+              if (token) {
+                api.get('/user/dashboard', {
+                  headers: { Authorization: `Bearer ${token}` },
+                }).then(res => {
+                  setDashboard(res.data?.data ?? null);
+                });
+              }
+            }}
+          />
+        )}
 
       <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-8">
         <div>
@@ -597,11 +652,22 @@ export default function DashboardPage() {
                   const fresh = await api.get('/user/dashboard', { headers: { Authorization: `Bearer ${token}` } });
                   setDashboard(fresh.data?.data ?? null);
                 } catch {
-                  await Swal.fire('Error', 'Could not update progress.', 'error');
+                  Swal.fire({
+                    title: 'Error',
+                    text: 'Could not update progress.',
+                    icon: 'error',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true,
+                    background: '#F44336', // A red background for error
+                    color: 'white',
+                  });
                 }
               };
 
-              const onDelete = () => deleteGoal(g);
+              const onDelete = () => handleDeleteGoal(id || '');
 
               return (
                 <div key={id || title} className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm">
@@ -738,18 +804,6 @@ export default function DashboardPage() {
         <div className="bg-indigo-50 dark:bg-indigo-900 border-l-4 border-indigo-500 text-indigo-700 dark:text-indigo-200 p-4 rounded">
           <p className="font-medium">{messages[0]}</p>
         </div>
-      )}
-
-      {showAddGoal && (
-        <AddGoalModal
-          onClose={() => setShowAddGoal(false)}
-          onSuccess={async () => {
-            const token = localStorage.getItem('token');
-            if (!token) return;
-            const fresh = await api.get('/user/dashboard', { headers: { Authorization: `Bearer ${token}` } });
-            setDashboard(fresh.data?.data ?? null);
-          }}
-        />
       )}
     </div>
   );

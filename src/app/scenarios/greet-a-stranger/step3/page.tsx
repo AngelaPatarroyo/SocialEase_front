@@ -1,7 +1,7 @@
 'use client';
 
-import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/utils/api';
 import Swal from 'sweetalert2';
 import { SCENARIOS } from '@/utils/selfAssessment';
@@ -97,8 +97,6 @@ export default function Step3Feedback() {
         data?.errors?.[0]?.msg ||
         'Something went wrong.';
       setError(msg);
-    } finally {
-      setSubmitting(false);
     }
   };
   

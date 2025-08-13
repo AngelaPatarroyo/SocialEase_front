@@ -8,7 +8,8 @@ import SelfAssessmentModal from '@/components/SelfAssessmentModal';
 import {
   LABELS,
   extractList,
-  normalize,
+  normalize as normalizeSelfAssessment,
+  SCENARIOS,
   type SelfAssessmentView,
 } from '@/utils/selfAssessment';
 
@@ -26,7 +27,7 @@ export default function SelfAssessmentPage() {
           headers: { Authorization: `Bearer ${token}` },
         });
         const list = extractList(res?.data);
-        setSa(list.length ? normalize(list[0]) : null);
+        setSa(list.length ? normalizeSelfAssessment(list[0]) : null);
       } catch (e) {
         console.error('Failed to load self-assessment', e);
       } finally {
@@ -198,7 +199,7 @@ export default function SelfAssessmentPage() {
                 headers: { Authorization: `Bearer ${token}` },
               });
               const list = extractList(res?.data);
-              setSa(list.length ? normalize(list[0]) : null);
+              setSa(list.length ? normalizeSelfAssessment(list[0]) : null);
               
               // Show success message about XP earned
               await Swal.fire({

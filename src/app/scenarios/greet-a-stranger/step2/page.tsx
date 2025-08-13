@@ -18,43 +18,43 @@ const dialogue = [
     ],
   },
   {
-    prompt: 'Stranger: “Hi there! Waiting long?”',
+    prompt: 'Stranger: "Hi there! Waiting long?"',
     responses: [
-      { label: '“Not really, just got here.”', reply: 'They chuckle: “Lucky timing then.”' },
-      { label: '“Yeah, it’s been a while.”', reply: 'They nod: “This machine’s always slow.”' },
-      { label: '“I’m just here for water.”', reply: 'They smile politely and look away briefly.' },
+      { label: '"Not really, just got here."', reply: 'They chuckle: "Lucky timing then."' },
+      { label: '"Yeah, it\'s been a while."', reply: 'They nod: "This machine\'s always slow."' },
+      { label: '"I\'m just here for water."', reply: 'They smile politely and look away briefly.' },
     ],
   },
   {
-    prompt: 'Stranger: “I haven’t seen you around before?”',
+    prompt: 'Stranger: "I haven\'t seen you around before?"',
     responses: [
-      { label: '“I’m new here!”', reply: 'They smile: “Welcome!”' },
-      { label: '“I usually keep to myself.”', reply: 'They nod understandingly.' },
-      { label: '“Just visiting a friend.”', reply: 'They say: “Ah, that makes sense.”' },
+      { label: '"I\'m new here!"', reply: 'They smile: "Welcome!"' },
+      { label: '"I usually keep to myself."', reply: 'They nod understandingly.' },
+      { label: '"Just visiting a friend."', reply: 'They say: "Ah, that makes sense."' },
     ],
   },
   {
-    prompt: 'Stranger: “Well, I’m Sam by the way.”',
+    prompt: 'Stranger: "Well, I\'m Sam by the way."',
     responses: [
-      { label: '“Nice to meet you, I’m Alex.”', reply: 'Sam says: “Nice to meet you too!”' },
-      { label: '“Cool, I’m just heading out.”', reply: 'Sam says: “Catch you later then.”' },
-      { label: '“Oh, I’m… uh...”', reply: 'Sam waits patiently.' },
+      { label: '"Nice to meet you, I\'m Alex."', reply: 'Sam says: "Nice to meet you too!"' },
+      { label: '"Cool, I\'m just heading out."', reply: 'Sam says: "Catch you later then."' },
+      { label: '"Oh, I\'m… uh..."', reply: 'Sam waits patiently.' },
     ],
   },
   {
-    prompt: 'Sam smiles: “Wanna grab a coffee sometime?”',
+    prompt: 'Sam smiles: "Wanna grab a coffee sometime?"',
     responses: [
-      { label: '“Sure, that sounds great!”', reply: 'Sam grins: “Awesome, looking forward to it.”' },
-      { label: '“Maybe another time.”', reply: 'Sam nods: “No pressure.”' },
-      { label: '“I’m not sure…”', reply: 'Sam replies: “Totally fine.”' },
+      { label: '"Sure, that sounds great!"', reply: 'Sam grins: "Awesome, looking forward to it."' },
+      { label: '"Maybe another time."', reply: 'Sam nods: "No pressure."' },
+      { label: '"I\'m not sure…"', reply: 'Sam replies: "Totally fine."' },
     ],
   },
   {
-    prompt: 'Sam: “Hope we chat again soon.”',
+    prompt: 'Sam: "Hope we chat again soon."',
     responses: [
-      { label: '“Definitely.”', reply: 'Sam smiles genuinely.' },
-      { label: '“Yeah, maybe.”', reply: 'Sam nods, slightly unsure.' },
-      { label: '“We’ll see.”', reply: 'Sam says: “Alright, take care!”' },
+      { label: '"Definitely."', reply: 'Sam smiles genuinely.' },
+      { label: '"Yeah, maybe."', reply: 'Sam nods, slightly unsure.' },
+      { label: '"We\'ll see."', reply: 'Sam says: "Alright, take care!"' },
     ],
   },
 ] as const;
@@ -101,6 +101,9 @@ export default function Step2Conversation() {
   const [turn, setTurn] = useState(0);
   const [choice, setChoice] = useState<number | null>(null);
   const [isBusy, setIsBusy] = useState(false);
+  const [audioPlaying, setAudioPlaying] = useState(false);
+  const [audioProgress, setAudioProgress] = useState(0);
+  const [audioType, setAudioType] = useState<'prompt' | 'reply' | null>(null);
   const router = useRouter();
 
   // Audio refs
@@ -134,9 +137,12 @@ export default function Step2Conversation() {
       } catch {}
       currentVoiceRef.current = null;
     }
+    setAudioPlaying(false);
+    setAudioProgress(0);
+    setAudioType(null);
   };
 
-  const playVoice = (src: string, fallbackMs = MAX_REPLY_FALLBACK) =>
+  const playVoice = (src: string, fallbackMs = MAX_REPLY_FALLBACK, type: 'prompt' | 'reply') =>
     new Promise<void>((resolve) => {
       if (!src) return setTimeout(resolve, fallbackMs);
 
@@ -145,18 +151,49 @@ export default function Step2Conversation() {
       const a = new Audio(src);
       a.volume = 1;
       currentVoiceRef.current = a;
+      setAudioPlaying(true);
+      setAudioType(type);
+
+      // Track audio progress
+      const updateProgress = () => {
+        if (a.duration && !isNaN(a.duration)) {
+          setAudioProgress((a.currentTime / a.duration) * 100);
+        }
+      };
 
       const cleanup = () => {
         a.removeEventListener('ended', onEnd);
         a.removeEventListener('error', onErr);
+        a.removeEventListener('timeupdate', updateProgress);
         if (currentVoiceRef.current === a) currentVoiceRef.current = null;
       };
-      const onEnd = () => { cleanup(); resolve(); };
-      const onErr = () => { cleanup(); setTimeout(resolve, fallbackMs); };
+      
+      const onEnd = () => { 
+        cleanup(); 
+        setAudioPlaying(false);
+        setAudioProgress(0);
+        setAudioType(null);
+        resolve(); 
+      };
+      
+      const onErr = () => { 
+        cleanup(); 
+        setAudioPlaying(false);
+        setAudioProgress(0);
+        setAudioType(null);
+        setTimeout(resolve, fallbackMs); 
+      };
 
       a.addEventListener('ended', onEnd);
       a.addEventListener('error', onErr);
-      a.play().catch(() => { cleanup(); setTimeout(resolve, fallbackMs); });
+      a.addEventListener('timeupdate', updateProgress);
+      a.play().catch(() => { 
+        cleanup(); 
+        setAudioPlaying(false);
+        setAudioProgress(0);
+        setAudioType(null);
+        setTimeout(resolve, fallbackMs); 
+      });
     });
 
   // Play prompt voice when a new prompt appears
@@ -165,7 +202,7 @@ export default function Step2Conversation() {
     (async () => {
       const promptSrc = voiceMap[turn];
       await delay(PRE_PROMPT_DELAY_MS);
-      if (!canceled && promptSrc) await playVoice(promptSrc, 1800);
+      if (!canceled && promptSrc) await playVoice(promptSrc, 1800, 'prompt');
     })();
     return () => {
       canceled = true;
@@ -175,7 +212,7 @@ export default function Step2Conversation() {
 
   // Handle user choice
   const handleChoice = async (idx: number) => {
-    if (isBusy || choice !== null) return;
+    if (isBusy || choice !== null || audioPlaying) return;
     setIsBusy(true);
     setChoice(idx);
 
@@ -183,7 +220,7 @@ export default function Step2Conversation() {
     const replySrc = replyVoiceMap[replyKey] || '';
 
     await delay(PRE_REPLY_DELAY_MS);
-    await playVoice(replySrc, MAX_REPLY_FALLBACK);
+    await playVoice(replySrc, MAX_REPLY_FALLBACK, 'reply');
     await delay(POST_REPLY_EXTRA_MS);
 
     if (turn < dialogue.length - 1) {
@@ -209,6 +246,9 @@ export default function Step2Conversation() {
     }
   };
 
+  // Check if user can interact (no audio playing)
+  const canInteract = !audioPlaying && !isBusy;
+
   return (
     <main
       className="min-h-screen flex items-end justify-center px-4 py-10 bg-cover bg-top bg-no-repeat bg-fixed"
@@ -218,6 +258,22 @@ export default function Step2Conversation() {
       }}
     >
       <div className="relative z-10 w-full max-w-2xl bg-white/90 backdrop-blur-lg rounded-3xl shadow-xl border border-indigo-100 px-8 py-10 space-y-6 mb-20 transition-all duration-300">
+        {/* Audio Progress Indicator */}
+        {audioPlaying && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center mb-2"
+          >
+            <div className="inline-flex items-center gap-2 text-sm text-indigo-600 bg-indigo-50/80 px-3 py-1.5 rounded-full border border-indigo-200/60">
+              <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></div>
+              <span className="font-medium">
+                {audioType === 'prompt' ? 'Listening...' : 'Hearing response...'}
+              </span>
+            </div>
+          </motion.div>
+        )}
+
         <motion.h2
           key={turn}
           initial={{ opacity: 0, y: -6 }}
@@ -234,8 +290,12 @@ export default function Step2Conversation() {
               <button
                 key={idx}
                 onClick={() => handleChoice(idx)}
-                disabled={isBusy}
-                className="w-full py-3 px-5 border border-indigo-300 rounded-xl bg-white hover:bg-indigo-100 disabled:opacity-60 text-indigo-800 text-left font-medium transition shadow-sm"
+                disabled={!canInteract}
+                className={`w-full py-3 px-5 border rounded-xl text-left font-medium transition-all duration-200 ${
+                  canInteract
+                    ? 'border-indigo-300 bg-white hover:bg-indigo-100 hover:shadow-md text-indigo-800'
+                    : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                }`}
               >
                 {r.label}
               </button>
@@ -249,6 +309,17 @@ export default function Step2Conversation() {
             className="text-center text-indigo-800 text-base italic"
           >
             {dialogue[turn].responses[choice].reply}
+          </motion.div>
+        )}
+
+        {/* Audio Status Footer */}
+        {audioPlaying && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center text-xs text-indigo-500 mt-4"
+          >
+            🔊 Audio playing - wait to respond
           </motion.div>
         )}
       </div>

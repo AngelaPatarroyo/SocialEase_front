@@ -133,7 +133,7 @@ export default function RegisterPage() {
             transition={{ duration: 0.8 }}
             className="absolute -top-4 sm:-top-6 bg-white border border-gray-200 text-gray-700 text-sm sm:text-base font-medium px-4 py-3 rounded-xl shadow-lg max-w-[240px]"
           >
-            Hi! 👋 <br /> Let’s create your account.
+            Hi! 👋 <br /> Let's create your account.
             <div className="absolute left-1/2 transform -translate-x-1/2 top-full w-4 h-4 bg-white border-l border-b border-gray-200 rotate-45"></div>
           </motion.div>
           <motion.div
@@ -229,7 +229,9 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-purple-500 hover:bg-purple-600 text-white py-3 rounded-xl font-semibold transition disabled:bg-gray-300"
+            className={`w-full text-white py-3 md:py-4 rounded-xl text-lg font-semibold shadow-md transition ${
+              loading ? 'bg-gray-300' : 'bg-purple-500 hover:bg-purple-600'
+            }`}
           >
             {loading ? 'Signing up...' : 'Sign Up'}
           </button>

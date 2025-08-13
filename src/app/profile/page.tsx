@@ -60,15 +60,26 @@ export default function ProfilePage() {
       const response = await api.get('/user/password/status', {
         headers: { Authorization: `Bearer ${token}` },
       });
+      console.log('[Profile] Backend password status:', response.data);
       setPasswordStatus(response.data);
     } catch (error) {
       console.error('Failed to fetch password status:', error);
       // Fallback to basic status based on user provider
+      const isGoogleUser = user?.provider === 'google';
+      const hasExistingPassword = !!user?.password;
+      
+      console.log('[Profile] Fallback password status:', {
+        isGoogleUser,
+        hasExistingPassword,
+        userProvider: user?.provider,
+        userPassword: user?.password
+      });
+      
       setPasswordStatus({
-        hasPassword: !!user?.password,
-        canSetPassword: user?.provider === 'google',
-        requiresCurrentPassword: !!user?.password,
-        authType: user?.provider === 'google' ? 'google' : 'local'
+        hasPassword: hasExistingPassword,
+        canSetPassword: isGoogleUser,
+        requiresCurrentPassword: hasExistingPassword, // Only require current password if user actually has one
+        authType: isGoogleUser ? 'google' : 'local'
       });
     }
   };
@@ -137,6 +148,13 @@ export default function ProfilePage() {
       const payload = passwordStatus?.requiresCurrentPassword 
         ? { currentPassword, newPassword } 
         : { newPassword };
+
+      console.log('[Profile] Password update payload:', {
+        payload,
+        requiresCurrentPassword: passwordStatus?.requiresCurrentPassword,
+        hasPassword: passwordStatus?.hasPassword,
+        isGoogleUser: user?.provider === 'google'
+      });
 
       const res = await api.put('/user/password', payload, {
         headers: { Authorization: `Bearer ${token}` },
@@ -383,6 +401,13 @@ export default function ProfilePage() {
                 </button>
               </div>
             )}
+
+            {/* Debug info */}
+            <div className="text-xs text-gray-500 bg-gray-100 p-2 rounded">
+              Debug: requiresCurrentPassword = {String(passwordStatus?.requiresCurrentPassword)}, 
+              hasPassword = {String(passwordStatus?.hasPassword)}, 
+              provider = {user?.provider}
+            </div>
 
             <div className="relative">
               <input

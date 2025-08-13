@@ -63,7 +63,6 @@ export default function AddGoalModal({ onClose, onSuccess }: Props) {
       await api.post('/goals', payload, { headers: { Authorization: `Bearer ${token}` } });
       await Swal.fire({ title: 'Goal added', icon: 'success' });
       onSuccess();
-      onClose();
     } catch (err) {
       console.error(err);
       await Swal.fire('Error', 'Could not create goal.', 'error');
