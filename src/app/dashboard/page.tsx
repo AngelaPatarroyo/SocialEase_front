@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -15,28 +15,29 @@ import {
   SCENARIOS,
   type SelfAssessmentView,
 } from '@/utils/selfAssessment';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const BADGE_CATALOG: Record<string, { name: string; image: string }> = {
   // XP Milestone Badges (100-1000 XP)
-  xp_explorer: { name: 'XP Explorer', image: '' },
+  xp_explorer: { name: 'XP Explorer', image: '/images/badges/xp-explorer.png' },
   momentum_builder: { name: 'Momentum Builder', image: '/images/badges/momentum-builder.png' },
   consistent_learner: { name: 'Consistent Learner', image: '/images/badges/consistem-builder.png' },
-  dedicated_practitioner: { name: 'Dedicated Practitioner', image: '' },
-  halfway_hero: { name: 'Halfway Hero', image: '' },
-  strong_commitment: { name: 'Strong Commitment', image: '' },
-  excellence_seeker: { name: 'Excellence Seeker', image: '' },
-  mastery_approach: { name: 'Mastery Approach', image: '' },
-  almost_legendary: { name: 'Almost Legendary', image: '' },
-  xp_master: { name: 'XP Master', image: '' },
+  dedicated_practitioner: { name: 'Dedicated Practitioner', image: '/images/badges/dedicated-p.png' },
+  halfway_hero: { name: 'Halfway Hero', image: '/images/badges/momentum-builder.png' },
+  strong_commitment: { name: 'Strong Commitment', image: '/images/badges/xp-explorer.png' },
+  excellence_seeker: { name: 'Excellence Seeker', image: '/images/badges/consistem-builder.png' },
+  mastery_approach: { name: 'Mastery Approach', image: '/images/badges/momentum-builder.png' },
+  almost_legendary: { name: 'Almost Legendary', image: '/images/badges/xp-explorer.png' },
+  xp_master: { name: 'XP Master', image: '/images/badges/consistem-builder.png' },
   
   // High XP Badges (5000+ XP)
-  xp_legend: { name: 'XP Legend', image: '' },
-  xp_god: { name: 'XP God', image: '' },
+  xp_legend: { name: 'XP Legend', image: '/images/badges/momentum-builder.png' },
+  xp_god: { name: 'XP God', image: '/images/badges/xp-explorer.png' },
   
   // Streak Badges
-  streak_master: { name: 'Streak Master', image: '' },
-  streak_champion: { name: 'Streak Champion', image: '' },
-  streak_legend: { name: 'Streak Legend', image: '' },
+  streak_master: { name: 'Streak Master', image: '/images/badges/streak-5.png' },
+  streak_champion: { name: 'Streak Champion', image: '/images/badges/momentum-builder.png' },
+  streak_legend: { name: 'Streak Legend', image: '/images/badges/consistem-builder.png' },
   
   // Achievement Badges
   first_steps: { name: 'First Steps', image: '/images/badges/first-steps.png' },
@@ -70,6 +71,9 @@ export default function DashboardPage() {
   const [showSelfAssessment, setShowSelfAssessment] = useState(false);
   const [selfAssessment, setSelfAssessment] = useState<SelfAssessmentView | null>(null);
   const [showAddGoal, setShowAddGoal] = useState(false);
+  const [newBadges, setNewBadges] = useState<string[]>([]);
+  const [showBadgeNotification, setShowBadgeNotification] = useState(false);
+  const previousBadges = useRef<string[]>([]);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -178,6 +182,63 @@ export default function DashboardPage() {
     };
     fetchAll();
   }, [router, refreshProfile]);
+
+  useEffect(() => {
+    if (dashboard && dashboard.stats && dashboard.stats.badges) {
+      const currentBadges = dashboard.stats.badges;
+      
+      console.log('[Dashboard] Badge detection:', {
+        currentBadges,
+        previousBadges: previousBadges.current,
+        currentXP: dashboard.stats.xp
+      });
+      
+      // Check for new badges by comparing with previous badges
+      if (previousBadges.current.length > 0) {
+        const newBadgeKeys = currentBadges.filter((badge: string) => 
+          !previousBadges.current.includes(badge)
+        );
+        
+        console.log('[Dashboard] New badges found:', newBadgeKeys);
+        
+        if (newBadgeKeys.length > 0) {
+          setNewBadges(newBadgeKeys);
+          setShowBadgeNotification(true);
+          
+          console.log('[Dashboard] Badge notification triggered for:', newBadgeKeys);
+          
+          // Auto-hide notification after 5 seconds
+          setTimeout(() => {
+            setShowBadgeNotification(false);
+          }, 5000);
+        }
+      } else {
+        // First time loading - check if user should have earned badges based on XP
+        console.log('[Dashboard] First load - checking XP-based badges');
+        const currentXP = dashboard.stats.xp || 0;
+        
+        // Check what badges should be awarded based on current XP
+        const expectedBadges = [];
+        if (currentXP >= 100) expectedBadges.push('xp_explorer');
+        if (currentXP >= 200) expectedBadges.push('momentum_builder');
+        if (currentXP >= 300) expectedBadges.push('consistent_learner');
+        if (currentXP >= 400) expectedBadges.push('dedicated_practitioner');
+        if (currentXP >= 500) expectedBadges.push('halfway_hero');
+        
+        console.log('[Dashboard] Expected badges for', currentXP, 'XP:', expectedBadges);
+        console.log('[Dashboard] Actual badges from backend:', currentBadges);
+        
+        // Check for missing badges that should be awarded
+        const missingBadges = expectedBadges.filter(badge => !currentBadges.includes(badge));
+        if (missingBadges.length > 0) {
+          console.log('[Dashboard] Missing badges that should be awarded:', missingBadges);
+        }
+      }
+      
+      // Update previous badges for next comparison
+      previousBadges.current = currentBadges;
+    }
+  }, [dashboard]);
 
   const handleGoToProfile = async () => {
     try {
@@ -291,6 +352,67 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-white dark:from-gray-900 dark:to-gray-800 p-6 md:p-10">
+      {/* Badge Notification */}
+      <AnimatePresence>
+        {showBadgeNotification && newBadges.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -50, scale: 0.9 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="fixed top-4 right-4 z-50 bg-gradient-to-r from-yellow-400 to-orange-500 text-white p-4 rounded-xl shadow-2xl border-2 border-yellow-300 max-w-sm"
+          >
+            <div className="flex items-center gap-3">
+              <div className="text-2xl">🏆</div>
+              <div>
+                <h3 className="font-bold text-lg">New Badge{newBadges.length > 1 ? 's' : ''} Earned!</h3>
+                <p className="text-sm opacity-90">
+                  {newBadges.length === 1 
+                    ? `You earned the "${BADGE_CATALOG[newBadges[0]]?.name || newBadges[0]}" badge!`
+                    : `You earned ${newBadges.length} new badges!`
+                  }
+                </p>
+              </div>
+            </div>
+            
+            {/* Show new badges */}
+            <div className="mt-3 flex gap-2">
+              {newBadges.map((badgeKey) => {
+                const badge = BADGE_CATALOG[badgeKey];
+                return (
+                  <div key={badgeKey} className="flex flex-col items-center bg-white/20 rounded-lg p-2">
+                    {badge?.image ? (
+                      <Image 
+                        src={badge.image} 
+                        alt={badge.name} 
+                        width={40} 
+                        height={40} 
+                        className="rounded-full"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 bg-white/30 rounded-full flex items-center justify-center">
+                        <span className="text-lg">🏅</span>
+                      </div>
+                    )}
+                    <span className="text-xs font-medium mt-1 text-center">
+                      {badge?.name || badgeKey}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+            
+            {/* Close button */}
+            <button
+              onClick={() => setShowBadgeNotification(false)}
+              className="absolute top-2 right-2 text-white/80 hover:text-white text-xl font-bold"
+            >
+              ×
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {showSelfAssessment && (
         <SelfAssessmentModal
           onSuccess={async () => {
@@ -389,7 +511,7 @@ export default function DashboardPage() {
             ))}
           </div>
         ) : (
-          <p className="text-gray-500 dark:text-gray-400">You haven’t earned any badges yet. Play scenarios to earn some!</p>
+          <p className="text-gray-500 dark:text-gray-400">You haven't earned any badges yet. Play scenarios to earn some!</p>
         )}
       </Section>
 
@@ -541,15 +663,74 @@ export default function DashboardPage() {
         )}
       </Section>
 
-      <Section title="Recent Scenarios">
+      <Section title="Recent Scenarios" titleClass="text-green-600 dark:text-green-300">
         {(progress?.recentScenarios || []).length > 0 ? (
-          <ul className="list-disc list-inside text-gray-600 dark:text-gray-300">
-            {(progress.recentScenarios || []).map((scenario: string, index: number) => (
-              <li key={index}>{scenario}</li>
-            ))}
-          </ul>
+          <div className="space-y-3">
+            {(progress.recentScenarios || []).map((scenario: any, index: number) => {
+              // Handle both string and object formats from backend
+              const scenarioData = typeof scenario === 'string' ? { name: scenario } : scenario;
+              const scenarioName = scenarioData.name || scenarioData.title || scenarioData.scenarioName || 'Unknown Scenario';
+              const completionDate = scenarioData.completedAt ? new Date(scenarioData.completedAt).toLocaleDateString() : null;
+              const xpEarned = scenarioData.xpEarned || scenarioData.xp || 0;
+              const rating = scenarioData.rating || scenarioData.userRating;
+              
+              return (
+                <div key={index} className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-gray-800 dark:text-gray-200 text-lg">
+                        {scenarioName}
+                      </h4>
+                      <div className="flex items-center gap-4 mt-2 text-sm text-gray-600 dark:text-gray-400">
+                        {completionDate && (
+                          <span className="flex items-center gap-1">
+                            <span className="text-green-500">✓</span>
+                            Completed {completionDate}
+                          </span>
+                        )}
+                        {xpEarned > 0 && (
+                          <span className="flex items-center gap-1">
+                            <span className="text-yellow-500">⭐</span>
+                            +{xpEarned} XP
+                          </span>
+                        )}
+                        {rating && (
+                          <span className="flex items-center gap-1">
+                            <span className="text-blue-500">💭</span>
+                            Rating: {rating}/5
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {scenarioData.slug && (
+                        <Link
+                          href={`/scenarios/${scenarioData.slug}`}
+                          className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200 text-sm font-medium"
+                        >
+                          Replay →
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         ) : (
-          <p className="text-gray-500 dark:text-gray-400">No recent scenarios. Let's get started.</p>
+          <div className="text-center py-8">
+            <div className="text-gray-400 dark:text-gray-500 text-6xl mb-4">🎯</div>
+            <p className="text-gray-500 dark:text-gray-400 text-lg mb-2">No scenarios completed yet</p>
+            <p className="text-gray-400 dark:text-gray-300 text-sm">
+              Start with your first scenario to see your progress here!
+            </p>
+            <Link
+              href="/scenarios"
+              className="inline-block mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-6 rounded-lg transition-colors"
+            >
+              Browse Scenarios
+            </Link>
+          </div>
         )}
       </Section>
 

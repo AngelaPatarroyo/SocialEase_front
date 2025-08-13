@@ -12,9 +12,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           strategy="afterInteractive"
         />
       </head>
-      <body>
+      <body suppressHydrationWarning={true}>
         {/* Only use your custom AuthProvider */}
-        <AuthProvider>{children}</AuthProvider>
+        <div id="app-root">
+          <AuthProvider>{children}</AuthProvider>
+        </div>
       </body>
     </html>
   );

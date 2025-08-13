@@ -7,13 +7,14 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff } from 'lucide-react';
 import Swal, { SweetAlertOptions } from 'sweetalert2';
-import api from '@/utils/api';
+import { useAuth } from '@/context/AuthContext';
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:4000').replace(/\/+$/, '');
 
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { login } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -47,45 +48,29 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const res = await api.post('/auth/login', { email, password });
-      const { token, user, error, message } = res.data;
+      // Use the AuthContext login function instead of direct API call
+      await login(email, password);
+      
+      // Get user data from localStorage after successful login
+      const userData = localStorage.getItem('user');
+      const user = userData ? JSON.parse(userData) : null;
 
-      if (!token || !user || error || message === 'User not found') {
-        throw new Error(message || error || 'Login failed');
-      }
+      if (user) {
+        await Swal.fire({
+          icon: 'success',
+          title: 'Welcome back!',
+          text: `Glad to see you again, ${user.name.split(' ')[0]}!`,
+          timer: 1500,
+          showConfirmButton: false,
+        });
 
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-
-      await Swal.fire({
-        icon: 'success',
-        title: 'Welcome back!',
-        text: `Glad to see you again, ${user.name.split(' ')[0]}!`,
-        timer: 1500,
-        showConfirmButton: false,
-      });
-
-      // Check if user has completed self-assessment
-      try {
-        const saRes = await api.get('/self-assessment');
-        const hasSelfAssessment = saRes.data?.data && Array.isArray(saRes.data.data) && saRes.data.data.length > 0;
-        
         // Always redirect to dashboard - the modal will appear automatically if needed
-        setTimeout(() => router.push('/dashboard'), 400);
-      } catch (error) {
-        // If we can't check self-assessment status, default to dashboard
-        console.warn('Could not check self-assessment status, redirecting to dashboard');
         setTimeout(() => router.push('/dashboard'), 400);
       }
     } catch (err: any) {
       console.error('🔥 Login error:', err);
       setLoading(false);
-      delete api.defaults.headers.common['Authorization'];
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
 
-      await new Promise((r) => setTimeout(r, 100));
       await Swal.fire({
         icon: 'error',
         title: 'Login failed',
@@ -186,7 +171,7 @@ export default function LoginPage() {
         </button>
 
         <p className="text-sm text-gray-500 mt-6">
-          Don’t have an account?{' '}
+          Don't have an account?{' '}
           <Link href="/register" className="text-blue-500 font-semibold hover:underline">
             Sign up
           </Link>
