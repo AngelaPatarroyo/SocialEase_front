@@ -32,13 +32,14 @@ export type Answers = {
   
   // ---------- Labels ----------
   export const LABELS: Record<keyof Answers, string> = {
+    practiceFrequency: 'Practice frequency',
     confidenceBefore: 'Confidence before',
     confidenceAfter: 'Confidence after',
     primaryGoal: 'Primary goal',
     comfortZones: 'Comfort zones',
     preferredScenarios: 'Preferred scenarios',
     anxietyTriggers: 'Anxiety triggers',
-    socialFrequency: 'Practice frequency',
+    socialFrequency: 'Social frequency',
     communicationConfidence: 'Communication confidence',
   };
   
@@ -228,6 +229,7 @@ export type Answers = {
   export function normalize(doc: any): SelfAssessmentView {
     const pick = (k: string, d: any) => (doc?.[k] ?? doc?.answers?.[k] ?? d);
     const answers: Answers = {
+      practiceFrequency: String(pick('practiceFrequency', '') || ''),
       confidenceBefore: Number.isFinite(Number(pick('confidenceBefore', null))) ? Number(pick('confidenceBefore', null)) : null,
       confidenceAfter:  Number.isFinite(Number(pick('confidenceAfter',  null))) ? Number(pick('confidenceAfter',  null)) : null,
       primaryGoal: String(pick('primaryGoal', '') || ''),

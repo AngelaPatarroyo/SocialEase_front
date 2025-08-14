@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@types/three": "^0.179.0",
     "axios": "^1.11.0",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.2",
@@ -23,7 +24,7 @@
     "next": "15.4.4",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "sweetalert2": "^11.22.2",
+    "three": "^0.179.1",
     "yup": "^1.6.1"
   },
   "devDependencies": {

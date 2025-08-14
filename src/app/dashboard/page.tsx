@@ -15,7 +15,7 @@ import {
   type SelfAssessmentView,
 } from '@/utils/selfAssessment';
 import { motion, AnimatePresence } from 'framer-motion';
-import Swal from 'sweetalert2';
+import { showNotification } from '@/components/Notification';
 
 const BADGE_CATALOG: Record<string, { name: string; image: string }> = {
   // XP Milestone Badges (100-1000 XP)
@@ -73,6 +73,7 @@ export default function DashboardPage() {
   const [newBadges, setNewBadges] = useState<string[]>([]);
   const [showBadgeNotification, setShowBadgeNotification] = useState(false);
   const previousBadges = useRef<string[]>([]);
+  const [deleteGoalConfirmation, setDeleteGoalConfirmation] = useState<{goalId: string, goalName: string} | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -301,26 +302,18 @@ export default function DashboardPage() {
   const fallbackPool = SCENARIOS.filter(s => !picked.has(s.slug));
   const recommendedCards = [...primary, ...fallbackPool].slice(0, Math.min(DESIRED_COUNT, SCENARIOS.length));
 
-  const handleDeleteGoal = async (goalId: string) => {
-    try {
-      // Show confirmation dialog
-      const confirmed = window.confirm('Are you sure you want to delete this goal?');
-      if (!confirmed) return;
+  const handleDeleteGoal = (goalId: string, goalName: string) => {
+    setDeleteGoalConfirmation({ goalId, goalName });
+  };
 
+  const confirmDeleteGoal = async () => {
+    if (!deleteGoalConfirmation) return;
+    
+    try {
+      const { goalId } = deleteGoalConfirmation;
       await api.delete(`/goals/${goalId}`);
       
-      Swal.fire({
-        title: 'Goal Deleted',
-        text: 'Your goal has been successfully removed.',
-        icon: 'success',
-        toast: true,
-        position: 'top-end',
-        showConfirmButton: false,
-        timer: 3000,
-        timerProgressBar: true,
-        background: '#4CAF50', // A green background for success
-        color: 'white',
-      });
+      showNotification('success', 'Goal Deleted', 'Your goal has been successfully removed.');
       
       // Refresh dashboard data
       const token = localStorage.getItem('token');
@@ -329,34 +322,19 @@ export default function DashboardPage() {
         setDashboard(fresh.data?.data ?? null);
       }
     } catch (error: any) {
+      let message = 'Could not delete goal. Please try again.';
       if (error.response?.status === 404) {
-        Swal.fire({
-          title: 'Goal Not Found',
-          text: 'This goal may have already been deleted.',
-          icon: 'warning',
-          toast: true,
-          position: 'top-end',
-          showConfirmButton: false,
-          timer: 3000,
-          timerProgressBar: true,
-          background: '#FFC107', // An orange background for warning
-          color: 'white',
-        });
-      } else {
-        Swal.fire({
-          title: 'Delete Failed',
-          text: 'Could not delete goal. Please try again.',
-          icon: 'error',
-          toast: true,
-          position: 'top-end',
-          showConfirmButton: false,
-          timer: 3000,
-          timerProgressBar: true,
-          background: '#F44336', // A red background for error
-          color: 'white',
-        });
+        message = 'This goal may have already been deleted.';
       }
+      
+      showNotification('error', 'Delete Failed', message);
+    } finally {
+      setDeleteGoalConfirmation(null);
     }
+  };
+
+  const cancelDeleteGoal = () => {
+    setDeleteGoalConfirmation(null);
   };
 
   const handleUpdateProgress = async (goalId: string, newProgress: number) => {
@@ -365,35 +343,13 @@ export default function DashboardPage() {
       if (!token) return;
       await api.put(`/goals/${goalId}/progress`, { progress: newProgress }, { headers: { Authorization: `Bearer ${token}` } });
       
-      Swal.fire({
-        title: 'Progress Updated',
-        text: 'Your goal progress has been updated successfully.',
-        icon: 'success',
-        toast: true,
-        position: 'top-end',
-        showConfirmButton: false,
-        timer: 3000,
-        timerProgressBar: true,
-        background: '#4CAF50', // A green background for success
-        color: 'white',
-      });
+      showNotification('success', 'Progress Updated', 'Your goal progress has been updated successfully.');
       
       // Refresh dashboard data
       const fresh = await api.get('/user/dashboard', { headers: { Authorization: `Bearer ${token}` } });
       setDashboard(fresh.data?.data ?? null);
     } catch (error) {
-      Swal.fire({
-        title: 'Update Failed',
-        text: 'Could not update progress. Please try again.',
-        icon: 'error',
-        toast: true,
-        position: 'top-end',
-        showConfirmButton: false,
-        timer: 3000,
-        timerProgressBar: true,
-        background: '#F44336', // A red background for error
-        color: 'white',
-      });
+      showNotification('error', 'Update Failed', 'Could not update progress. Please try again.');
     }
   };
 
@@ -506,13 +462,24 @@ export default function DashboardPage() {
           </h1>
           <p className="text-gray-600 dark:text-gray-300 mt-2">Here is your current progress.</p>
         </div>
-        <button
-          onClick={handleGoToProfile}
-          title="Update your profile"
-          className="rounded-full border-4 border-indigo-500 shadow-md hover:scale-105 transition-transform"
-        >
-          <Image src={avatarSrc} alt="User Avatar" width={90} height={90} className="rounded-full" />
-        </button>
+        <div className="flex items-center gap-4">
+          {/* Admin Panel Link - Only visible to admin users */}
+          {user.role === 'admin' && (
+            <Link
+              href="/admin"
+              className="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg shadow transition-colors"
+            >
+              🛡️ Admin Panel
+            </Link>
+          )}
+          <button
+            onClick={handleGoToProfile}
+            title="Update your profile"
+            className="rounded-full border-4 border-indigo-500 shadow-md hover:scale-105 transition-transform"
+          >
+            <Image src={avatarSrc} alt="User Avatar" width={90} height={90} className="rounded-full" />
+          </button>
+        </div>
       </div>
 
       <div className="flex justify-center mb-6">
@@ -652,22 +619,11 @@ export default function DashboardPage() {
                   const fresh = await api.get('/user/dashboard', { headers: { Authorization: `Bearer ${token}` } });
                   setDashboard(fresh.data?.data ?? null);
                 } catch {
-                  Swal.fire({
-                    title: 'Error',
-                    text: 'Could not update progress.',
-                    icon: 'error',
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 3000,
-                    timerProgressBar: true,
-                    background: '#F44336', // A red background for error
-                    color: 'white',
-                  });
+                  showNotification('error', 'Error', 'Could not update progress.');
                 }
               };
 
-              const onDelete = () => handleDeleteGoal(id || '');
+              const onDelete = () => handleDeleteGoal(id || '', title || '');
 
               return (
                 <div key={id || title} className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm">
@@ -803,6 +759,41 @@ export default function DashboardPage() {
       {messages.length > 0 && (
         <div className="bg-indigo-50 dark:bg-indigo-900 border-l-4 border-indigo-500 text-indigo-700 dark:text-indigo-200 p-4 rounded">
           <p className="font-medium">{messages[0]}</p>
+        </div>
+      )}
+
+      {/* Delete Goal Confirmation Modal */}
+      {deleteGoalConfirmation && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
+            <div className="mt-3 text-center">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/40">
+                <svg className="h-6 w-6 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mt-4">Delete Goal</h3>
+              <div className="mt-2 px-7">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Are you sure you want to delete the goal "{deleteGoalConfirmation.goalName}"? This action cannot be undone.
+                </p>
+              </div>
+              <div className="flex justify-center space-x-3 mt-6">
+                <button
+                  onClick={cancelDeleteGoal}
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDeleteGoal}
+                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                >
+                  Delete Goal
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Step1 from './SelfAssessment/Step1';
 import Step2 from './SelfAssessment/Step2';
 import Step3 from './SelfAssessment/Step3';
-import Swal from 'sweetalert2';
+import { showNotification } from '@/components/Notification';
 import api from '@/utils/api';
 
 interface SelfAssessmentModalProps {
@@ -21,13 +21,9 @@ export default function SelfAssessmentModal({ onSuccess, onClose }: SelfAssessme
   const backdropRef = useRef<HTMLDivElement | null>(null);
 
   // Helpers
-  const warn = (title: string, text?: string) =>
-    Swal.fire({
-      icon: 'warning',
-      title,
-      text,
-      confirmButtonColor: '#4F46E5',
-    });
+  const warn = (title: string, text?: string) => {
+    showNotification('warning', title, text);
+  };
 
   // ESC to close
   useEffect(() => {
@@ -119,25 +115,15 @@ export default function SelfAssessmentModal({ onSuccess, onClose }: SelfAssessme
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      // Show success message with XP award
-      await Swal.fire({
-        title: 'Self-Assessment Complete! 🎉',
-        text: 'You earned 10 XP for completing your self-assessment!',
-        icon: 'success',
-        confirmButtonColor: '#4F46E5',
-      });
+      showNotification('success', 'Self-Assessment Complete! 🎉', 'You earned 10 XP for completing your self-assessment!');
 
       setCompleted(true);
       await onSuccess?.(payload);
       onClose?.();
     } catch (error) {
       console.error('Failed to submit self-assessment:', error);
-      await Swal.fire({
-        title: 'Submission Failed',
-        text: 'There was an error submitting your self-assessment. Please try again.',
-        icon: 'error',
-        confirmButtonColor: '#4F46E5',
-      });
+      
+      showNotification('error', 'Submission Failed', 'There was an error submitting your self-assessment. Please try again.');
     } finally {
       setSubmitting(false);
     }

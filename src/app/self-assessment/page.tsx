@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import Swal from 'sweetalert2';
+import { showNotification } from '@/components/Notification';
 import api from '@/utils/api';
 import SelfAssessmentModal from '@/components/SelfAssessmentModal';
 import {
@@ -50,16 +50,16 @@ export default function SelfAssessmentPage() {
       const exists = (existing.data?.data || [])
         .some((g: any) => String(g.title || '').toLowerCase() === title.toLowerCase());
       if (exists) {
-        await Swal.fire('Already added', 'This goal is already on your dashboard.', 'info');
+        showNotification('warning', 'Already added', 'This goal is already on your dashboard.');
         return;
       }
 
       await api.post('/goals', { title, target, deadline }, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      await Swal.fire({ title: 'Added!', text: 'Goal added to your dashboard.', icon: 'success' });
+      showNotification('success', 'Added!', 'Goal added to your dashboard.');
     } catch {
-      await Swal.fire('Error', 'Could not add this goal.', 'error');
+      showNotification('error', 'Error', 'Could not add this goal.');
     }
   };
 
@@ -95,7 +95,7 @@ export default function SelfAssessmentPage() {
       .map(t => ({ title: t, target, deadline }));
 
     if (payloads.length === 0) {
-      await Swal.fire('All set', 'These goals are already on your dashboard.', 'info');
+      showNotification('info', 'All set', 'These goals are already on your dashboard.');
       return;
     }
 
@@ -103,10 +103,10 @@ export default function SelfAssessmentPage() {
       await Promise.all(payloads.map(p =>
         api.post('/goals', p, { headers: { Authorization: `Bearer ${token}` } })
       ));
-      await Swal.fire({ title: 'Goals added', icon: 'success' });
+      showNotification('success', 'Goals added', 'Your goals have been added to the dashboard.');
     } catch (e) {
       console.error(e);
-      await Swal.fire('Error', 'Failed to add goals', 'error');
+      showNotification('error', 'Error', 'Failed to add goals.');
     }
   };
 
@@ -202,12 +202,7 @@ export default function SelfAssessmentPage() {
               setSa(list.length ? normalizeSelfAssessment(list[0]) : null);
               
               // Show success message about XP earned
-              await Swal.fire({
-                title: 'Assessment Updated! 🎉',
-                text: 'Your self-assessment has been updated and you earned XP!',
-                icon: 'success',
-                confirmButtonColor: '#4F46E5',
-              });
+              showNotification('success', 'Assessment Updated! 🎉', 'Your self-assessment has been updated and you earned XP!');
             } catch (error) {
               console.error('Failed to refresh self-assessment data:', error);
             }

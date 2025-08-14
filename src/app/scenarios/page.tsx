@@ -118,17 +118,17 @@ const scenarios: ScenarioCardProps[] = [
 
 export default function ScenariosPage() {
   return (
-    <main className="min-h-screen px-4 py-10 bg-gradient-to-br from-blue-50 via-indigo-50 to-white">
+    <main className="min-h-screen px-4 py-10 bg-gradient-to-br from-blue-50 via-indigo-50 to-white dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-colors">
       <motion.h1
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 1 }}
-        className="text-4xl md:text-5xl font-bold text-center text-indigo-800 mb-4"
+        className="text-4xl md:text-5xl font-bold text-center text-indigo-800 dark:text-indigo-200 mb-4"
       >
         Social Scenarios
       </motion.h1>
 
-      <p className="text-center text-gray-600 text-md mb-6">
+      <p className="text-center text-gray-600 dark:text-gray-300 text-md mb-6">
         Practice real-life social situations and gain XP as you grow!
       </p>
 
@@ -137,10 +137,10 @@ export default function ScenariosPage() {
           initial={{ opacity: 0, y: -6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1 }}
-          className="relative bg-white border border-gray-200 px-4 py-3 rounded-xl shadow-md text-sm text-gray-700 text-center max-w-xs"
+          className="relative bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 px-4 py-3 rounded-xl shadow-md text-sm text-gray-700 dark:text-gray-200 text-center max-w-xs"
         >
-          Let’s take this one step at a time. Pick a scenario you feel ready for!
-          <div className="absolute left-1/2 transform -translate-x-1/2 top-full w-4 h-4 bg-white border-l border-b border-gray-200 rotate-45 -mt-1" />
+          Let's take this one step at a time. Pick a scenario you feel ready for!
+          <div className="absolute left-1/2 transform -translate-x-1/2 top-full w-4 h-4 bg-white dark:bg-gray-700 border-l border-b border-gray-200 dark:border-gray-600 rotate-45 -mt-1" />
         </motion.div>
 
         <motion.div

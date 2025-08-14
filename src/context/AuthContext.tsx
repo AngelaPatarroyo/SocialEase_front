@@ -32,6 +32,7 @@ interface LocalUser {
   goals?: Goal[];
   provider?: 'google' | 'local';
   password?: string;
+  role?: 'user' | 'admin' | 'moderator';
 }
 
 interface AuthContextProps {

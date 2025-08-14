@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useTheme } from '@/context/ThemeContext';
 import api from '@/utils/api';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { UploadCloud, Eye, EyeOff, Shield, Key, Info } from 'lucide-react';
-import Swal from 'sweetalert2';
+import { showNotification } from '@/components/Notification';
 
 interface PasswordStatus {
   hasPassword: boolean;
@@ -17,12 +18,13 @@ interface PasswordStatus {
 
 export default function ProfilePage() {
   const { user, token, logout, refreshProfile, loading } = useAuth();
+  const { theme: globalTheme, setTheme } = useTheme();
   const router = useRouter();
 
   const [name, setName] = useState('');
-  const [theme, setTheme] = useState('light');
   const [avatar, setAvatar] = useState('default-avatar.png');
   const [customAvatar, setCustomAvatar] = useState<File | null>(null);
+  const [localTheme, setLocalTheme] = useState<'light' | 'dark'>('light');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -31,8 +33,9 @@ export default function ProfilePage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loadingSave, setLoadingSave] = useState(false);
   const [loadingPassword, setLoadingPassword] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
   const [passwordStatus, setPasswordStatus] = useState<PasswordStatus | null>(null);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
 
   useEffect(() => {
     const tokenInStorage = localStorage.getItem('token');
@@ -44,10 +47,18 @@ export default function ProfilePage() {
   useEffect(() => {
     if (user) {
       setName(user.name || '');
-      setTheme(user.theme || 'light');
       setAvatar(user.avatar || 'default-avatar.png');
+      // Initialize local theme from user profile
+      if (user.theme) {
+        setLocalTheme(user.theme as 'light' | 'dark');
+      }
     }
-  }, [user]);
+  }, [user]); // Only depend on user
+
+  // Sync local theme with global theme changes (from navbar toggle)
+  useEffect(() => {
+    setLocalTheme(globalTheme);
+  }, [globalTheme]);
 
   useEffect(() => {
     if (token) {
@@ -90,9 +101,17 @@ export default function ProfilePage() {
     }
   };
 
+  const handleThemeChange = (newTheme: 'light' | 'dark') => {
+    // Don't do anything if the theme is already the same
+    if (newTheme === localTheme) return;
+    
+    // Just update the local state for now - don't save to backend yet
+    // The theme will be saved when user clicks "Save Changes" button
+    setLocalTheme(newTheme);
+  };
+
   const handleSave = async () => {
     setLoadingSave(true);
-    setMessage(null);
     try {
       let avatarUrl = avatar;
 
@@ -117,14 +136,17 @@ export default function ProfilePage() {
         setAvatar(avatarUrl);
       }
 
-      await api.put('/user/profile', { name, avatar: avatarUrl, theme }, {
+      await api.put('/user/profile', { name, avatar: avatarUrl, theme: localTheme }, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      setMessage({ type: 'success', text: 'Profile updated successfully!' });
+      // Update global theme after successful save
+      setTheme(localTheme);
+      
+      showNotification('success', 'Profile updated successfully!', 'Theme and other changes have been saved.');
       await refreshProfile();
     } catch (err: any) {
-      setMessage({ type: 'error', text: err.message || 'Failed to update profile.' });
+      showNotification('error', 'Error', err.message || 'Failed to update profile.');
     } finally {
       setLoadingSave(false);
     }
@@ -132,17 +154,16 @@ export default function ProfilePage() {
 
   const handlePasswordUpdate = async () => {
     if (newPassword !== confirmPassword) {
-      setMessage({ type: 'error', text: 'Passwords do not match' });
+      showNotification('error', 'Validation Error', 'Passwords do not match');
       return;
     }
 
     if (newPassword.length < 6) {
-      setMessage({ type: 'error', text: 'Password must be at least 6 characters long' });
+      showNotification('error', 'Validation Error', 'Password must be at least 6 characters long');
       return;
     }
 
     setLoadingPassword(true);
-    setMessage(null);
 
     try {
       const payload = passwordStatus?.requiresCurrentPassword 
@@ -165,7 +186,7 @@ export default function ProfilePage() {
         localStorage.setItem('user', JSON.stringify(res.data.user));
       }
 
-      setMessage({ type: 'success', text: 'Password updated successfully!' });
+      showNotification('success', 'Success', 'Password updated successfully!');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -173,7 +194,7 @@ export default function ProfilePage() {
       // Refresh password status
       await fetchPasswordStatus();
     } catch (err: any) {
-      setMessage({ type: 'error', text: err.response?.data?.message || err.message || 'Failed to update password' });
+      showNotification('error', 'Error', err.response?.data?.message || err.message || 'Failed to update password');
     } finally {
       setLoadingPassword(false);
     }
@@ -184,41 +205,29 @@ export default function ProfilePage() {
     router.push('/login');
   };
 
-  const handleDeleteAccount = async () => {
-    const result = await Swal.fire({
-      title: 'Are you sure?',
-      text: 'This will permanently delete your account.',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#aaa',
-      confirmButtonText: 'Yes, delete it!',
-    });
+  const handleDeleteAccount = () => {
+    setShowDeleteConfirmation(true);
+  };
 
-    if (result.isConfirmed) {
-      try {
-        await api.delete('/user/delete', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+  const confirmDeleteAccount = async () => {
+    try {
+      await api.delete('/user/delete', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-        await Swal.fire({
-          icon: 'success',
-          title: 'Account Deleted',
-          text: 'Your account has been deleted successfully.',
-          timer: 1500,
-          showConfirmButton: false,
-        });
+      showNotification('success', 'Account Deleted', 'Your account has been deleted successfully.');
 
-        logout();
-        router.push('/');
-      } catch (err: any) {
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: err.response?.data?.message || 'Something went wrong.',
-        });
-      }
+      logout();
+      router.push('/');
+    } catch (err: any) {
+      showNotification('error', 'Error', err.response?.data?.message || 'Something went wrong.');
+    } finally {
+      setShowDeleteConfirmation(false);
     }
+  };
+
+  const cancelDeleteAccount = () => {
+    setShowDeleteConfirmation(false);
   };
 
   const displayAvatar = customAvatar
@@ -249,9 +258,9 @@ export default function ProfilePage() {
     if (!passwordStatus) return null;
     
     const getBadgeColor = () => {
-      if (passwordStatus.authType === 'hybrid') return 'bg-green-100 text-green-800 border-green-200';
-      if (passwordStatus.authType === 'google') return 'bg-blue-100 text-blue-800 border-blue-200';
-      return 'bg-purple-100 text-purple-800 border-purple-200';
+      if (passwordStatus.authType === 'hybrid') return 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 border-green-200 dark:border-green-700';
+      if (passwordStatus.authType === 'google') return 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-700';
+      return 'bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-200 border-purple-200 dark:border-purple-700';
     };
 
     const getBadgeText = () => {
@@ -273,15 +282,9 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="p-8 min-h-screen bg-gradient-to-br from-purple-50 to-white flex flex-col items-center">
-      <div className="bg-white shadow-lg rounded-3xl p-8 w-full max-w-2xl border">
-        <h1 className="text-3xl font-bold text-purple-700 mb-6 text-center">Your Profile</h1>
-
-        {message && (
-          <div className={`mb-4 p-3 rounded-lg text-center font-semibold ${message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-            {message.text}
-          </div>
-        )}
+    <div className="p-8 min-h-screen bg-gradient-to-br from-purple-50 to-white dark:from-gray-900 dark:to-gray-800 flex flex-col items-center transition-colors">
+      <div className="bg-white dark:bg-gray-800 shadow-lg rounded-3xl p-8 w-full max-w-2xl border border-gray-200 dark:border-gray-700">
+        <h1 className="text-3xl font-bold text-purple-700 dark:text-purple-300 mb-6 text-center">Your Profile</h1>
 
         <div className="flex flex-col items-center mb-6">
           <Image
@@ -316,35 +319,39 @@ export default function ProfilePage() {
         </div>
 
         <div className="mb-4">
-          <label className="block text-gray-600 mb-2 font-medium">Name</label>
+          <label className="block text-gray-600 dark:text-gray-300 mb-2 font-medium">Name</label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-300"
+            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-300 dark:focus:ring-purple-500 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 transition-colors"
           />
         </div>
 
         <div className="mb-4">
-          <label className="block text-gray-600 mb-2 font-medium">Email</label>
+          <label className="block text-gray-600 dark:text-gray-300 mb-2 font-medium">Email</label>
           <input
             type="email"
             value={user?.email || ''}
             disabled
-            className="w-full p-3 bg-gray-100 border border-gray-300 rounded-lg cursor-not-allowed"
+            className="w-full p-3 bg-gray-100 dark:bg-gray-600 border border-gray-300 dark:border-gray-600 rounded-lg cursor-not-allowed text-gray-500 dark:text-gray-400"
           />
         </div>
 
         <div className="mb-6">
-          <label className="block text-gray-600 mb-2 font-medium">Theme</label>
-          <select
-            value={theme}
-            onChange={(e) => setTheme(e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg"
-          >
-            <option value="light">Light</option>
-            <option value="dark">Dark</option>
-          </select>
+          <label className="block text-gray-600 dark:text-gray-300 mb-2 font-medium">Theme</label>
+          <div className="flex items-center gap-3">
+            <select
+              value={localTheme}
+              onChange={(e) => handleThemeChange(e.target.value as 'light' | 'dark')}
+              className="flex-1 p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 transition-colors"
+            >
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </select>
+            <div className={`w-4 h-4 rounded-full ${localTheme === 'dark' ? 'bg-gray-800 border-2 border-gray-600' : 'bg-white border-2 border-gray-300'}`} />
+          </div>
+          
         </div>
 
         <button
@@ -358,21 +365,21 @@ export default function ProfilePage() {
         </button>
 
         {/* Password Management Section */}
-        <div className="mt-8 border-t pt-6">
+        <div className="mt-8 border-t border-gray-200 dark:border-gray-700 pt-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-purple-700">Password Management</h2>
+            <h2 className="text-xl font-semibold text-purple-700 dark:text-purple-300">Password Management</h2>
             {getPasswordStatusBadge()}
           </div>
 
           {passwordStatus && (
-            <div className="mb-4 p-4 bg-gray-50 rounded-lg border">
+            <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
               <div className="flex items-start gap-3">
-                <Info size={20} className="text-blue-600 mt-0.5 flex-shrink-0" />
-                <div className="text-sm text-gray-700">
+                <Info size={20} className="text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                <div className="text-sm text-gray-700 dark:text-gray-200">
                   <p className="font-medium mb-1">Authentication Status</p>
                   <p>{getPasswordStatusMessage()}</p>
                   {passwordStatus.canSetPassword && !passwordStatus.hasPassword && (
-                    <p className="text-blue-600 font-medium mt-2">
+                    <p className="text-blue-600 dark:text-blue-400 font-medium mt-2">
                       💡 You can set a password to enable email/password login!
                     </p>
                   )}
@@ -390,12 +397,12 @@ export default function ProfilePage() {
                   placeholder="Current Password"
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-lg pr-10"
+                  className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg pr-10 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 transition-colors"
                 />
                 <button
                   type="button"
                   onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                  className="absolute inset-y-0 right-3 flex items-center text-gray-500"
+                  className="absolute inset-y-0 right-3 flex items-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
                 >
                   {showCurrentPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
@@ -403,7 +410,7 @@ export default function ProfilePage() {
             )}
 
             {/* Debug info */}
-            <div className="text-xs text-gray-500 bg-gray-100 p-2 rounded">
+            <div className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 p-2 rounded">
               Debug: requiresCurrentPassword = {String(passwordStatus?.requiresCurrentPassword)}, 
               hasPassword = {String(passwordStatus?.hasPassword)}, 
               provider = {user?.provider}
@@ -415,12 +422,12 @@ export default function ProfilePage() {
                 placeholder="New Password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg pr-10"
+                className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg pr-10 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 transition-colors"
               />
               <button
                 type="button"
                 onClick={() => setShowNewPassword(!showNewPassword)}
-                className="absolute inset-y-0 right-3 flex items-center text-gray-500"
+                className="absolute inset-y-0 right-3 flex items-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
               >
                 {showNewPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
@@ -432,12 +439,12 @@ export default function ProfilePage() {
                 placeholder="Confirm New Password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg pr-10"
+                className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg pr-10 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 transition-colors"
               />
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute inset-y-0 right-3 flex items-center text-gray-500"
+                className="absolute inset-y-0 right-3 flex items-center text-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
               >
                 {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
@@ -481,6 +488,41 @@ export default function ProfilePage() {
           Delete Account
         </button>
       </div>
+
+      {/* Delete Account Confirmation Modal */}
+      {showDeleteConfirmation && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
+            <div className="mt-3 text-center">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/40">
+                <svg className="h-6 w-6 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mt-4">Delete Account</h3>
+              <div className="mt-2 px-7">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Are you sure you want to permanently delete your account? This action cannot be undone.
+                </p>
+              </div>
+              <div className="flex justify-center space-x-3 mt-6">
+                <button
+                  onClick={cancelDeleteAccount}
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDeleteAccount}
+                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                >
+                  Delete Account
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

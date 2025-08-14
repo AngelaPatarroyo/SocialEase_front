@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/utils/api';
-import Swal from 'sweetalert2';
+import { showNotification } from '@/components/Notification';
 import { SCENARIOS } from '@/utils/selfAssessment';
 
 export default function Step3Feedback() {
@@ -77,14 +77,8 @@ export default function Step3Feedback() {
         console.log('[submit] No XP data in backend response');
       }
   
-      // Show success alert with XP earned
-      await Swal.fire({
-        title: 'Scenario Complete! 🎉',
-        text: `Great job! You earned ${scenarioXP} XP for completing this scenario.`,
-        icon: 'success',
-        confirmButtonColor: '#4F46E5',
-        confirmButtonText: 'Continue to Dashboard',
-      });
+      // Show success notification with XP earned
+      showNotification('success', 'Scenario Complete! 🎉', `Great job! You earned ${scenarioXP} XP for completing this scenario.`);
   
       router.push('/dashboard?toast=feedback_saved');
     } catch (err: any) {

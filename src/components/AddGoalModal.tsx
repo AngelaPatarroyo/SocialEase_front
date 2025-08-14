@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import Swal from 'sweetalert2';
+import { showNotification } from '@/components/Notification';
 import api from '@/utils/api';
 
 type Props = {
@@ -15,6 +15,7 @@ export default function AddGoalModal({ onClose, onSuccess }: Props) {
   const [deadline, setDeadline] = useState<string>('');         // yyyy-mm-dd
   const [reminder, setReminder] = useState<string>('');         // yyyy-mm-ddThh:mm
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const toISODate = (d: string) => {
     if (!d) return undefined;
@@ -30,9 +31,11 @@ export default function AddGoalModal({ onClose, onSuccess }: Props) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+    
     const trimmed = title.trim();
     if (!trimmed) {
-      await Swal.fire('Missing title', 'Please enter a goal title.', 'info');
+      setError('Please enter a goal title.');
       return;
     }
 
@@ -47,7 +50,7 @@ export default function AddGoalModal({ onClose, onSuccess }: Props) {
         (g: any) => String(g.title || '').toLowerCase() === trimmed.toLowerCase()
       );
       if (exists) {
-        await Swal.fire('Already added', 'There is already a goal with this title.', 'info');
+        setError('There is already a goal with this title.');
         return;
       }
 
@@ -61,11 +64,13 @@ export default function AddGoalModal({ onClose, onSuccess }: Props) {
       if (reminderISO) payload.reminder = reminderISO;
 
       await api.post('/goals', payload, { headers: { Authorization: `Bearer ${token}` } });
-      await Swal.fire({ title: 'Goal added', icon: 'success' });
+      
+      showNotification('success', 'Goal Added', 'Your goal has been created successfully.');
+      
       onSuccess();
     } catch (err) {
       console.error(err);
-      await Swal.fire('Error', 'Could not create goal.', 'error');
+      setError('Could not create goal. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -80,13 +85,20 @@ export default function AddGoalModal({ onClose, onSuccess }: Props) {
         </div>
 
         <form onSubmit={handleSubmit} className="px-5 py-4 space-y-4">
+          {/* Error Message */}
+          {error && (
+            <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300 text-sm">
+              {error}
+            </div>
+          )}
+          
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Title *</label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 p-2 outline-none"
+              className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 p-2 outline-none text-gray-700 dark:text-gray-200 transition-colors"
               placeholder="e.g., Practice small talk twice"
               required
             />
@@ -99,7 +111,7 @@ export default function AddGoalModal({ onClose, onSuccess }: Props) {
               min={1}
               value={target}
               onChange={(e) => setTarget(parseInt(e.target.value || '1', 10))}
-              className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 p-2 outline-none"
+              className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 p-2 outline-none text-gray-700 dark:text-gray-200 transition-colors"
             />
           </div>
 
@@ -110,7 +122,7 @@ export default function AddGoalModal({ onClose, onSuccess }: Props) {
                 type="date"
                 value={deadline}
                 onChange={(e) => setDeadline(e.target.value)}
-                className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 p-2 outline-none"
+                className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 p-2 outline-none text-gray-700 dark:text-gray-200 transition-colors"
               />
             </div>
             <div>
@@ -119,7 +131,7 @@ export default function AddGoalModal({ onClose, onSuccess }: Props) {
                 type="datetime-local"
                 value={reminder}
                 onChange={(e) => setReminder(e.target.value)}
-                className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 p-2 outline-none"
+                className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 p-2 outline-none text-gray-700 dark:text-gray-200 transition-colors"
               />
             </div>
           </div>
@@ -128,14 +140,14 @@ export default function AddGoalModal({ onClose, onSuccess }: Props) {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+              className="px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-60"
+              className="px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-700 disabled:opacity-60 transition-colors"
             >
               {submitting ? 'Saving…' : 'Save goal'}
             </button>

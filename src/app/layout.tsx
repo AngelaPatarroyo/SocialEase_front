@@ -1,6 +1,7 @@
 import './globals.css';
 import Script from 'next/script';
 import { AuthProvider } from '@/context/AuthContext';
+import { ThemeProvider } from '@/context/ThemeContext';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -15,7 +16,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body suppressHydrationWarning={true}>
         {/* Only use your custom AuthProvider */}
         <div id="app-root">
-          <AuthProvider>{children}</AuthProvider>
+          <ThemeProvider>
+            <AuthProvider>{children}</AuthProvider>
+          </ThemeProvider>
         </div>
       </body>
     </html>

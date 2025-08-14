@@ -8,7 +8,6 @@ import { motion } from 'framer-motion';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { Eye, EyeOff } from 'lucide-react';
-import Swal from 'sweetalert2';
 import api from '@/utils/api';
 import { useAuth } from '@/context/AuthContext';
 
@@ -18,10 +17,8 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  const showAlert = (options: any) => {
-    Swal.fire(options);
-  };
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     if (localStorage.getItem('token')) {
@@ -53,6 +50,9 @@ export default function RegisterPage() {
     }),
     onSubmit: async (values) => {
       setLoading(true);
+      setError(null);
+      setSuccess(null);
+      
       try {
         // Register the user
         await api.post('/auth/register', {
@@ -65,41 +65,18 @@ export default function RegisterPage() {
         try {
           await login(values.email, values.password);
           
-          // Show success message and redirect to dashboard (modal will appear automatically)
-          const result = await Swal.fire({
-            icon: 'success',
-            title: 'Account created successfully! 🎉',
-            text: 'Welcome to SocialEase! You\'ll be redirected to your dashboard where you can complete your self-assessment.',
-            confirmButtonColor: '#4F46E5',
-            confirmButtonText: 'Go to Dashboard',
-          });
-          
-          if (result.isConfirmed) {
-            router.push('/dashboard');
-          }
+          setSuccess('Account created successfully! 🎉 Welcome to SocialEase!');
+          setTimeout(() => router.push('/dashboard'), 2000);
           
         } catch (loginErr: any) {
           // If auto-login fails, show message to manually log in
-          const result = await Swal.fire({
-            icon: 'success',
-            title: 'Account created!',
-            text: 'Your account has been created successfully. Please log in to continue.',
-            confirmButtonColor: '#4F46E5',
-            confirmButtonText: 'Go to Login',
-          });
-          
-          if (result.isConfirmed) {
-            router.push('/login');
-          }
+          setSuccess('Account created! Please log in to continue.');
+          setTimeout(() => router.push('/login'), 2000);
         }
         
         formik.resetForm();
       } catch (err: any) {
-        showAlert({
-          icon: 'error',
-          title: 'Registration failed',
-          text: err.response?.data?.message || 'Something went wrong.',
-        });
+        setError(err.response?.data?.message || 'Something went wrong. Please try again.');
       } finally {
         setLoading(false);
       }
@@ -117,8 +94,8 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-purple-50 via-pink-50 to-white px-4">
-      <div className="bg-white rounded-3xl shadow-xl px-6 sm:px-8 md:px-10 pt-16 pb-8 w-full max-w-md text-center border border-gray-100 relative">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-purple-50 via-pink-50 to-white dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 px-4 transition-colors">
+      <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl px-6 sm:px-8 md:px-10 pt-16 pb-8 w-full max-w-md text-center border border-gray-100 dark:border-gray-700 relative">
 
         {/* Logo */}
         <div className="flex justify-center mb-10">
@@ -131,10 +108,10 @@ export default function RegisterPage() {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="absolute -top-4 sm:-top-6 bg-white border border-gray-200 text-gray-700 text-sm sm:text-base font-medium px-4 py-3 rounded-xl shadow-lg max-w-[240px]"
+            className="absolute -top-4 sm:-top-6 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 text-sm sm:text-base font-medium px-4 py-3 rounded-xl shadow-lg max-w-[240px]"
           >
             Hi! 👋 <br /> Let's create your account.
-            <div className="absolute left-1/2 transform -translate-x-1/2 top-full w-4 h-4 bg-white border-l border-b border-gray-200 rotate-45"></div>
+            <div className="absolute left-1/2 transform -translate-x-1/2 top-full w-4 h-4 bg-white dark:bg-gray-700 border-l border-b border-gray-200 dark:border-gray-600 rotate-45"></div>
           </motion.div>
           <motion.div
             initial={{ y: -8 }}
@@ -146,9 +123,23 @@ export default function RegisterPage() {
           </motion.div>
         </div>
 
-        <p className="text-gray-500 text-base mb-6">
+        <p className="text-gray-500 dark:text-gray-400 text-base mb-6">
           Join SocialEase and start your journey to confident conversations.
         </p>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300 text-sm">
+            {error}
+          </div>
+        )}
+
+        {/* Success Message */}
+        {success && (
+          <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-green-700 dark:text-green-300 text-sm">
+            {success}
+          </div>
+        )}
 
         <form onSubmit={formik.handleSubmit} className="space-y-4 md:space-y-5">
 
@@ -156,28 +147,28 @@ export default function RegisterPage() {
             name="name"
             type="text"
             placeholder="Name"
-            className="w-full p-3 border rounded-lg focus:ring-4 focus:ring-purple-100"
+            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 focus:ring-4 focus:ring-purple-100 dark:focus:ring-purple-900/30 transition-colors"
             value={formik.values.name}
             onChange={formik.handleChange}
             onBlur={formik.handleBlur}
             disabled={loading}
           />
           {formik.touched.name && formik.errors.name && (
-            <p className="text-red-500 text-xs">{formik.errors.name}</p>
+            <p className="text-red-500 dark:text-red-400 text-xs">{formik.errors.name}</p>
           )}
 
           <input
             name="email"
             type="email"
             placeholder="Email"
-            className="w-full p-3 border rounded-lg focus:ring-4 focus:ring-purple-100"
+            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 focus:ring-4 focus:ring-purple-100 dark:focus:ring-purple-900/30 transition-colors"
             value={formik.values.email}
             onChange={formik.handleChange}
             onBlur={formik.handleBlur}
             disabled={loading}
           />
           {formik.touched.email && formik.errors.email && (
-            <p className="text-red-500 text-xs">{formik.errors.email}</p>
+            <p className="text-red-500 dark:text-red-400 text-xs">{formik.errors.email}</p>
           )}
 
           <div className="relative">
@@ -185,7 +176,7 @@ export default function RegisterPage() {
               name="password"
               type={showPassword ? 'text' : 'password'}
               placeholder="Password"
-              className="w-full p-3 border rounded-lg focus:ring-4 focus:ring-purple-100"
+              className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 focus:ring-4 focus:ring-purple-100 dark:focus:ring-purple-900/30 transition-colors"
               value={formik.values.password}
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
@@ -194,13 +185,13 @@ export default function RegisterPage() {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
+              className="absolute inset-y-0 right-3 flex items-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
             >
               {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
           </div>
           {formik.touched.password && formik.errors.password && (
-            <p className="text-red-500 text-xs">{formik.errors.password}</p>
+            <p className="text-red-500 dark:text-red-400 text-xs">{formik.errors.password}</p>
           )}
 
           <div className="relative">
@@ -208,7 +199,7 @@ export default function RegisterPage() {
               name="confirmPassword"
               type={showConfirmPassword ? 'text' : 'password'}
               placeholder="Confirm Password"
-              className="w-full p-3 border rounded-lg focus:ring-4 focus:ring-purple-100"
+              className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 focus:ring-4 focus:ring-purple-100 dark:focus:ring-purple-900/30 transition-colors"
               value={formik.values.confirmPassword}
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
@@ -217,20 +208,20 @@ export default function RegisterPage() {
             <button
               type="button"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
+              className="absolute inset-y-0 right-3 flex items-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
             >
               {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
           </div>
           {formik.touched.confirmPassword && formik.errors.confirmPassword && (
-            <p className="text-red-500 text-xs">{formik.errors.confirmPassword}</p>
+            <p className="text-red-500 dark:text-red-400 text-xs">{formik.errors.confirmPassword}</p>
           )}
 
           <button
             type="submit"
             disabled={loading}
-            className={`w-full text-white py-3 md:py-4 rounded-xl text-lg font-semibold shadow-md transition ${
-              loading ? 'bg-gray-300' : 'bg-purple-500 hover:bg-purple-600'
+            className={`w-full text-white py-3 md:py-4 rounded-xl text-lg font-semibold shadow-md transition-colors ${
+              loading ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed' : 'bg-purple-500 hover:bg-purple-600 dark:bg-purple-600 dark:hover:bg-purple-700'
             }`}
           >
             {loading ? 'Signing up...' : 'Sign Up'}
@@ -239,23 +230,23 @@ export default function RegisterPage() {
 
         {/* Divider */}
         <div className="flex items-center my-4">
-          <hr className="flex-grow border-gray-300" />
-          <span className="mx-2 text-gray-500 text-sm">or</span>
-          <hr className="flex-grow border-gray-300" />
+          <hr className="flex-grow border-gray-300 dark:border-gray-600" />
+          <span className="mx-2 text-gray-500 dark:text-gray-400 text-sm">or</span>
+          <hr className="flex-grow border-gray-300 dark:border-gray-600" />
         </div>
 
         {/* Google Register */}
         <button
           onClick={handleGoogleSignUp}
-          className="w-full flex items-center justify-center gap-3 border border-gray-300 rounded-lg py-3 font-semibold hover:bg-gray-50 transition"
+          className="w-full flex items-center justify-center gap-3 border border-gray-300 dark:border-gray-600 rounded-lg py-3 font-semibold text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
         >
           <Image src="/images/google-icon.png" alt="Google" width={20} height={20} />
           Sign up with Google
         </button>
 
-        <p className="text-sm text-gray-500 mt-8">
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-8">
           Already have an account?{' '}
-          <Link href="/login" className="text-purple-500 font-semibold hover:underline">
+          <Link href="/login" className="text-purple-500 dark:text-purple-400 font-semibold hover:underline">
             Log in
           </Link>
         </p>
