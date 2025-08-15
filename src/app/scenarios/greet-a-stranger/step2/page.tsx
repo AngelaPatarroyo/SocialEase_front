@@ -3,12 +3,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
+import { useAuth } from '@/context/AuthContext';
 
 // ===== Scenario identifier (use slug) =====
 const SCENARIO_SLUG = 'greet-a-stranger';
 
 // ===== Script =====
-const dialogue = [
+const getDialogue = (userName: string) => [
   {
     prompt: 'You approach a stranger near the coffee machine...',
     responses: [
@@ -36,7 +37,7 @@ const dialogue = [
   {
     prompt: 'Stranger: "Well, I\'m Sam by the way."',
     responses: [
-      { label: '"Nice to meet you, I\'m Alex."', reply: 'Sam says: "Nice to meet you too!"' },
+      { label: `"Nice to meet you, I'm ${userName}."`, reply: 'Sam says: "Nice to meet you too!"' },
       { label: '"Cool, I\'m just heading out."', reply: 'Sam says: "Catch you later then."' },
       { label: '"Oh, I\'m… uh..."', reply: 'Sam waits patiently.' },
     ],
@@ -105,6 +106,13 @@ export default function Step2Conversation() {
   const [audioProgress, setAudioProgress] = useState(0);
   const [audioType, setAudioType] = useState<'prompt' | 'reply' | null>(null);
   const router = useRouter();
+  const { user } = useAuth();
+  
+  // Get user's name or fallback to "there"
+  const userName = user?.name || user?.firstName || 'there';
+  
+  // Get dialogue with user's name
+  const dialogue = getDialogue(userName);
 
   // Audio refs
   const cafeAudioRef = useRef<HTMLAudioElement | null>(null);

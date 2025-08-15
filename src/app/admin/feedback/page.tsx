@@ -244,7 +244,7 @@ export default function AdminFeedback() {
             <div>
               <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">Scenario Feedback</h1>
               <p className="text-gray-600 dark:text-gray-300 text-lg">Review how users felt after completing social scenarios</p>
-              <p className="text-emerald-600 dark:text-emerald-400 text-sm mt-2 font-medium">✅ Connected to real backend - Showing actual user feedback</p>
+      
             </div>
             <div className="flex items-center space-x-8">
               <Link href="/admin" className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium transition-colors">

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 
 interface Question {
   label: string;
@@ -11,131 +12,215 @@ interface Question {
 export default function Step1({ onNext }: { onNext: (profileData: any) => void }) {
   const questions: Question[] = [
     {
-      label: 'How do you currently feel in everyday social situations?',
+      label: 'Social comfort level?',
       key: 'socialComfort',
       options: [
-        'Very comfortable – I enjoy them.',
-        'Generally fine, but I sometimes feel awkward.',
-        'Often anxious or unsure how to act.',
-        'Very anxious – I avoid them when possible.',
+        'Very comfortable',
+        'Generally fine',
+        'Often anxious',
+        'Very anxious',
       ],
     },
     {
-      label: 'How often do you avoid social activities you’d like to attend?',
+      label: 'Avoid social activities?',
       key: 'avoidance',
-      options: ['Rarely or never', 'Occasionally', 'Often', 'Almost always'],
+      options: ['Rarely', 'Sometimes', 'Often', 'Always'],
     },
     {
-      label: 'How confident do you feel in starting conversations?',
+      label: 'Starting conversations?',
       key: 'conversationConfidence',
       options: [
         'Very confident',
         'Somewhat confident',
-        'Not very confident',
-        'Not at all confident',
+        'Not confident',
+        'Not at all',
       ],
     },
     {
-      label: 'How do you typically feel after social interactions?',
+      label: 'After interactions?',
       key: 'postInteraction',
       options: [
-        'Proud and satisfied',
-        'Neutral or slightly unsure',
-        'Self-critical or embarrassed',
-        'Very upset or ashamed',
+        'Proud',
+        'Neutral',
+        'Self-critical',
+        'Upset',
       ],
     },
     {
-      label: 'Which best describes your recent social experiences?',
+      label: 'Recent experiences?',
       key: 'recentExperiences',
       options: [
         'Mostly positive',
-        'Mixed — some good, some bad',
-        'Mostly negative or difficult',
-        'Very limited or none',
+        'Mixed',
+        'Mostly negative',
+        'Limited',
       ],
     },
     {
-      label: 'What is your main motivation for using this app?',
+      label: 'Main motivation?',
       key: 'motivation',
       options: [
-        'To build confidence in social situations',
-        'To reduce anxiety symptoms',
-        'To prepare for specific challenges (e.g. public speaking)',
-        'To feel more connected and less isolated',
+        'Build confidence',
+        'Reduce anxiety',
+        'Prepare',
+        'Connect',
       ],
     },
     {
-      label: 'How often do you engage in social activities?',
+      label: 'Social frequency?',
       key: 'socialFrequency',
-      options: ['Daily', 'Weekly', 'Monthly', 'Rarely or never'],
+      options: ['Daily', 'Weekly', 'Monthly', 'Rarely'],
     },
     {
-      label: 'How confident are you in your communication skills?',
+      label: 'Communication skills?',
       key: 'communicationConfidence',
       options: [
         'Very confident',
         'Somewhat confident',
-        'Not very confident',
-        'Not at all confident',
+        'Not confident',
+        'Not at all',
       ],
     },
   ];
 
-  const [step, setStep] = useState(0);
+  const [currentQuestion, setCurrentQuestion] = useState(0);
   const [profileData, setProfileData] = useState<any>({});
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
 
   const total = questions.length;
+  const progress = ((currentQuestion + 1) / total) * 100;
 
-  const getProgressColor = (index: number) => {
-    const colors = [
-      'bg-yellow-400',
-      'bg-orange-400',
-      'bg-green-400',
-      'bg-blue-400',
-      'bg-indigo-500',
-      'bg-purple-500',
-    ];
-    return colors[index] || 'bg-indigo-500';
+  const handleOptionSelect = (option: string) => {
+    setSelectedOption(option);
+    
+    // Auto-advance after a short delay for better UX
+    setTimeout(() => {
+      const questionKey = questions[currentQuestion].key;
+      const newData = { ...profileData, [questionKey]: option };
+      setProfileData(newData);
+      
+      if (currentQuestion < total - 1) {
+        setCurrentQuestion(currentQuestion + 1);
+        setSelectedOption(null);
+      } else {
+        // Last question completed
+        onNext(newData);
+      }
+    }, 300);
   };
 
-  const handleOptionClick = (value: string) => {
-    const currentKey = questions[step].key;
-    const updatedData = { ...profileData, [currentKey]: value };
-    setProfileData(updatedData);
-
-    if (step + 1 < total) {
-      setStep((prev) => prev + 1);
-    } else {
-      onNext(updatedData);
-    }
+  const getProgressColor = () => {
+    if (progress < 30) return 'from-red-500 to-orange-500';
+    if (progress < 60) return 'from-orange-500 to-yellow-500';
+    if (progress < 90) return 'from-yellow-500 to-green-500';
+    return 'from-green-500 to-blue-500';
   };
 
-  const q = questions[step];
+  const getEmoji = (questionIndex: number) => {
+    const emojis = ['😊', '🤔', '💭', '🎯', '🌟', '💪', '📱', '🗣️'];
+    return emojis[questionIndex] || '✨';
+  };
 
   return (
-    <div className="w-full space-y-6">
-      <div className="text-sm text-gray-500">Step {step + 1} of {total}</div>
+    <div className="space-y-4">
+      {/* Progress Header */}
+      <div className="text-center space-y-2">
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-2xl"
+        >
+          {getEmoji(currentQuestion)}
+        </motion.div>
+        
+        <div className="space-y-1">
+          <h2 className="text-lg font-bold text-indigo-800 dark:text-indigo-200">
+            Question {currentQuestion + 1} of {total}
+          </h2>
+          <p className="text-sm text-gray-600 dark:text-gray-300">
+            Let's understand your social comfort level
+          </p>
+        </div>
 
-      <div className="w-full h-2 bg-gray-200 rounded">
-        <div
-          className={`h-2 ${getProgressColor(step)} rounded transition-all`}
-          style={{ width: `${((step + 1) / total) * 100}%` }}
-        />
+        {/* Progress Bar */}
+        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+          <motion.div
+            className={`h-2 bg-gradient-to-r ${getProgressColor()} rounded-full`}
+            initial={{ width: 0 }}
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.5 }}
+          />
+        </div>
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          {Math.round(progress)}% complete
+        </p>
       </div>
 
-      <h2 className="text-xl font-semibold text-indigo-800 dark:text-white">{q.label}</h2>
+      {/* Current Question */}
+      <motion.div
+        key={currentQuestion}
+        initial={{ opacity: 0, x: 30 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: -30 }}
+        transition={{ duration: 0.3 }}
+        className="space-y-3"
+      >
+        <div className="text-center">
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 leading-relaxed">
+            {questions[currentQuestion].label}
+          </h3>
+        </div>
 
-      <div className="space-y-3">
-        {q.options.map((option) => (
-          <button
-            key={option}
-            onClick={() => handleOptionClick(option)}
-            className="w-full py-3 px-4 rounded-lg bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-800 dark:hover:bg-indigo-700 text-indigo-800 dark:text-white font-medium shadow-sm transition"
-          >
-            {option}
-          </button>
-        ))}
+        {/* Options */}
+        <div className="space-y-2">
+          {questions[currentQuestion].options.map((option, index) => (
+            <motion.button
+              key={index}
+              onClick={() => handleOptionSelect(option)}
+              className={`w-full p-3 text-left rounded-lg border-2 transition-all duration-200 ${
+                selectedOption === option
+                  ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 shadow-md'
+                  : 'border-gray-200 dark:border-gray-600 hover:border-indigo-300 dark:hover:border-indigo-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+              }`}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-medium text-sm">{option}</span>
+                {selectedOption === option && (
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="w-5 h-5 bg-indigo-500 rounded-full flex items-center justify-center"
+                  >
+                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </motion.div>
+                )}
+              </div>
+            </motion.button>
+          ))}
+        </div>
+      </motion.div>
+
+      {/* Navigation */}
+      <div className="flex justify-between items-center pt-2">
+        <button
+          onClick={() => setCurrentQuestion(Math.max(0, currentQuestion - 1))}
+          disabled={currentQuestion === 0}
+          className={`px-3 py-1 rounded-lg transition-colors text-sm ${
+            currentQuestion === 0
+              ? 'text-gray-400 cursor-not-allowed'
+              : 'text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300'
+          }`}
+        >
+          ← Previous
+        </button>
+        
+        <span className="text-xs text-gray-500 dark:text-gray-400">
+          {currentQuestion + 1} of {total}
+        </span>
       </div>
     </div>
   );

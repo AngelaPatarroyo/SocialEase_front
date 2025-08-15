@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { showNotification } from '@/components/Notification';
 import api from '@/utils/api';
 import SelfAssessmentModal from '@/components/SelfAssessmentModal';
+import { motion } from 'framer-motion';
 import {
   LABELS,
   extractList,
@@ -139,6 +140,58 @@ export default function SelfAssessmentPage() {
           </div>
         </div>
 
+        {/* Quick Navigation */}
+        <div className="bg-gray-50 dark:bg-gray-600 p-4 rounded-lg border border-gray-200 dark:border-gray-500 mb-6">
+          <div className="flex flex-wrap justify-center gap-3">
+            <Link 
+              href="/" 
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-900/50 transition-colors border border-gray-200 dark:border-gray-700 text-sm"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+              Home
+            </Link>
+            
+            <Link 
+              href="/dashboard" 
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors border border-indigo-200 dark:border-indigo-700 text-sm"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              Dashboard
+            </Link>
+            <Link 
+              href="/scenarios" 
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors border border-blue-200 dark:border-blue-700 text-sm"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+              Scenarios
+            </Link>
+            <Link 
+              href="/goals" 
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors border border-green-200 dark:border-green-700 text-sm"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Goals
+            </Link>
+            <Link 
+              href="/profile" 
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors border border-purple-200 dark:border-purple-700 text-sm"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              Profile
+            </Link>
+          </div>
+        </div>
+
         {loading && <p className="text-gray-600 dark:text-gray-300">Loading…</p>}
 
         {!loading && !sa && (
@@ -149,39 +202,85 @@ export default function SelfAssessmentPage() {
 
         {!loading && sa && (
           <>
-            <h2 className="text-lg font-semibold text-indigo-600 dark:text-indigo-300 mt-2">Your Answers</h2>
-            <ul className="list-disc list-inside text-sm text-gray-700 dark:text-gray-200">
-              {Object.entries(sa.answers).map(([k, v]) => (
-                <li key={k}>
-                  <span className="font-medium">{LABELS[k as keyof typeof LABELS] ?? k}:</span>{' '}
-                  {Array.isArray(v) ? v.join(', ') : String(v ?? '')}
-                </li>
-              ))}
-            </ul>
+            {/* Assessment Summary */}
+            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 p-6 rounded-xl border border-indigo-200 dark:border-indigo-700 mb-8">
+              <h2 className="text-xl font-bold text-indigo-800 dark:text-indigo-200 mb-4 flex items-center gap-2">
+                📊 Assessment Summary
+              </h2>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-3">Your Profile</h3>
+                  <div className="space-y-2 text-sm">
+                    {Object.entries(sa.answers).map(([k, v]) => (
+                      <div key={k} className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">
+                          {LABELS[k as keyof typeof LABELS] ?? k}:
+                        </span>
+                        <span className="font-medium text-gray-800 dark:text-gray-200">
+                          {Array.isArray(v) ? v.join(', ') : String(v ?? '')}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-3">Quick Actions</h3>
+                  <div className="space-y-2">
+                    <button
+                      onClick={handleAddAll}
+                      className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors"
+                    >
+                      Add All Suggestions as Goals
+                    </button>
+                    <button
+                      onClick={() => setShowModal(true)}
+                      className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors"
+                    >
+                      Update Assessment
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-            <h2 className="text-lg font-semibold text-indigo-600 dark:text-indigo-300 mt-6">
-              Suggested next steps
-            </h2>
-            <ul className="space-y-2">
-              {sa.insights.suggestions.map((s, i) => (
-                <li
-                  key={i}
-                  className="flex items-center justify-between gap-3 bg-white/60 dark:bg-gray-800/60 rounded-lg p-3 border border-gray-200 dark:border-gray-700"
-                >
-                  <span className="text-sm text-gray-700 dark:text-gray-200">{s}</span>
-                  <button
-                    onClick={() => addGoal(String(s))}
-                    className="text-xs px-3 py-1 rounded-md bg-indigo-600 text-white hover:bg-indigo-700"
+            {/* Suggested Next Steps */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-bold text-indigo-800 dark:text-indigo-200 flex items-center gap-2">
+                🎯 Suggested Next Steps
+              </h2>
+              <div className="grid gap-4">
+                {sa.insights.suggestions.map((s, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                    className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200"
                   >
-                    Add as goal
-                  </button>
-                </li>
-              ))}
-            </ul>
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex-1">
+                        <span className="text-gray-800 dark:text-gray-200 font-medium">{s}</span>
+                      </div>
+                      <button
+                        onClick={() => addGoal(String(s))}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                      >
+                        <span>+</span>
+                        Add Goal
+                      </button>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
 
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-4">
-              This guidance is informational and not a medical or psychological diagnosis.
-            </p>
+            <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
+              <p className="text-sm text-blue-800 dark:text-blue-200 text-center">
+                💡 <strong>Remember:</strong> This guidance is informational and not a medical or psychological diagnosis. 
+                Use it as a starting point for your personal growth journey.
+              </p>
+            </div>
           </>
         )}
       </div>

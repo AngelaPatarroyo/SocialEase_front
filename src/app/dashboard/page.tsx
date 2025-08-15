@@ -486,6 +486,77 @@ export default function DashboardPage() {
         <Image src="/images/wizard-blob.png" alt="Friendly wizard mascot" width={120} height={120} className="rounded-full shadow-md" />
       </div>
 
+      {/* Quick Navigation Section */}
+      <div className="bg-white dark:bg-gray-700 p-6 rounded-xl shadow mb-8">
+        <h3 className="text-lg font-semibold text-indigo-600 dark:text-indigo-300 mb-4">Quick Navigation</h3>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <Link 
+            href="/" 
+            className="flex flex-col items-center p-4 rounded-lg border-2 border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-900/20 transition-all duration-200 group"
+          >
+            <div className="w-12 h-12 mb-3 group-hover:scale-110 transition-transform flex items-center justify-center">
+              <svg className="w-8 h-8 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+            </div>
+            <span className="font-medium text-gray-700 dark:text-gray-200 text-center">Home</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400 text-center mt-1">Main Page</span>
+          </Link>
+          
+          <Link 
+            href="/scenarios" 
+            className="flex flex-col items-center p-4 rounded-lg border-2 border-indigo-200 dark:border-indigo-700 hover:border-indigo-400 dark:hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all duration-200 group"
+          >
+            <div className="w-12 h-12 mb-3 group-hover:scale-110 transition-transform flex items-center justify-center">
+              <svg className="w-8 h-8 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+            </div>
+            <span className="font-medium text-gray-700 dark:text-gray-200 text-center">Scenarios</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400 text-center mt-1">Practice & Learn</span>
+          </Link>
+          
+          <Link 
+            href="/goals" 
+            className="flex flex-col items-center p-4 rounded-lg border-2 border-green-200 dark:border-green-700 hover:border-green-400 dark:hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all duration-200 group"
+          >
+            <div className="w-12 h-12 mb-3 group-hover:scale-110 transition-transform flex items-center justify-center">
+              <svg className="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <span className="font-medium text-gray-700 dark:text-gray-200 text-center">Goals</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400 text-center mt-1">Track Progress</span>
+          </Link>
+          
+          <Link 
+            href="/self-assessment" 
+            className="flex flex-col items-center p-4 rounded-lg border-2 border-purple-200 dark:border-purple-700 hover:border-purple-400 dark:hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-200 group"
+          >
+            <div className="w-12 h-12 mb-3 group-hover:scale-110 transition-transform flex items-center justify-center">
+              <svg className="w-8 h-8 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </div>
+            <span className="font-medium text-gray-700 dark:text-gray-200 text-center">Assessment</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400 text-center mt-1">Check Progress</span>
+          </Link>
+          
+          <Link 
+            href="/profile" 
+            className="flex flex-col items-center p-4 rounded-lg border-2 border-blue-200 dark:border-blue-700 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200 group"
+          >
+            <div className="w-12 h-12 mb-3 group-hover:scale-110 transition-transform flex items-center justify-center">
+              <svg className="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </div>
+            <span className="font-medium text-gray-700 dark:text-gray-200 text-center">Profile</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400 text-center mt-1">Settings & Info</span>
+          </Link>
+        </div>
+      </div>
+
       <div className="bg-white dark:bg-gray-700 p-6 rounded-xl shadow mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h3 className="text-lg font-semibold text-indigo-600 dark:text-indigo-300">Self-Assessment</h3>
