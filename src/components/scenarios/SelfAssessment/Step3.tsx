@@ -56,27 +56,16 @@ export default function Step3({ onSubmit }: { onSubmit: (data: any) => void }) {
   };
 
   const getConfidenceColor = (value: number) => {
-    if (value <= 2) return 'text-red-500';
-    if (value <= 4) return 'text-orange-500';
-    if (value <= 6) return 'text-yellow-500';
-    if (value <= 8) return 'text-green-500';
-    return 'text-blue-500';
+    return 'text-indigo-600 dark:text-indigo-400';
   };
 
   return (
     <div className="space-y-3">
       {/* Header */}
       <div className="text-center space-y-1">
-        <motion.div
-          initial={{ opacity: 0, y: -5 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-xl"
-        >
-          🎯
-        </motion.div>
         
         <div className="space-y-1">
-          <h2 className="text-base font-bold text-indigo-800 dark:text-indigo-200">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-white">
             Final Step
           </h2>
           <p className="text-xs text-gray-600 dark:text-gray-300">
@@ -98,7 +87,7 @@ export default function Step3({ onSubmit }: { onSubmit: (data: any) => void }) {
         {/* Primary Goal */}
         <div className="space-y-1">
           <label className="block font-medium text-sm text-gray-800 dark:text-gray-200">
-            Main goal? 🎯
+            Main goal?
           </label>
           <input
             type="text"
@@ -113,7 +102,7 @@ export default function Step3({ onSubmit }: { onSubmit: (data: any) => void }) {
         {/* Confidence After Assessment */}
         <div className="space-y-2">
           <label className="block font-medium text-sm text-gray-800 dark:text-gray-200">
-            Confidence now? 💪
+            Confidence now?
           </label>
           
           <div className="text-center space-y-2">
@@ -127,7 +116,7 @@ export default function Step3({ onSubmit }: { onSubmit: (data: any) => void }) {
             <div className="relative px-2">
               <div className="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                 <motion.div
-                  className="h-1.5 bg-gradient-to-r from-red-500 via-yellow-500 to-green-500 rounded-full"
+                  className="h-1.5 bg-indigo-500 rounded-full"
                   initial={{ width: 0 }}
                   animate={{ width: `${(data.confidenceAfter / 10) * 100}%` }}
                   transition={{ duration: 0.5 }}
@@ -163,7 +152,7 @@ export default function Step3({ onSubmit }: { onSubmit: (data: any) => void }) {
         {/* Comfort Zones */}
         <div className="space-y-1">
           <label className="block font-medium text-sm text-gray-800 dark:text-gray-200">
-            Comfort zones? 🏠
+            Comfort zones?
           </label>
           <MultiSelect
             options={['Home', 'With friends', 'Online spaces', 'Work', 'One-on-one settings']}
@@ -175,7 +164,7 @@ export default function Step3({ onSubmit }: { onSubmit: (data: any) => void }) {
         {/* Preferred Scenarios */}
         <div className="space-y-1">
           <label className="block font-medium text-sm text-gray-800 dark:text-gray-200">
-            Interesting scenarios? 🌟
+            Interesting scenarios?
           </label>
           <MultiSelect
             options={['Small talk', 'Group conversations', 'Public speaking', 'Workplace interactions', 'Meeting new people', 'Handling criticism', 'Setting boundaries']}
@@ -187,7 +176,7 @@ export default function Step3({ onSubmit }: { onSubmit: (data: any) => void }) {
         {/* Anxiety Triggers */}
         <div className="space-y-1">
           <label className="block font-medium text-sm text-gray-800 dark:text-gray-200">
-            Anxiety triggers? 😰
+            Anxiety triggers?
           </label>
           <MultiSelect
             options={['Large groups', 'Speaking in public', 'Meeting strangers', 'Being judged', 'Conflict situations', 'Performance pressure', 'Unfamiliar environments']}
@@ -207,10 +196,10 @@ export default function Step3({ onSubmit }: { onSubmit: (data: any) => void }) {
         <button
           onClick={handleSubmit}
           disabled={submitting}
-          className={`w-full py-2 px-4 rounded-md font-semibold text-sm shadow transition-all duration-200 transform ${
+          className={`w-full py-2 px-4 rounded-md font-medium text-sm transition-colors ${
             submitting
               ? 'bg-gray-400 cursor-not-allowed'
-              : 'bg-indigo-600 hover:bg-indigo-700 hover:scale-105'
+              : 'bg-indigo-600 hover:bg-indigo-700'
           } text-white`}
         >
           {submitting ? (
@@ -219,7 +208,7 @@ export default function Step3({ onSubmit }: { onSubmit: (data: any) => void }) {
               Completing...
             </div>
           ) : (
-            'Complete Assessment 🎉'
+            'Complete Assessment'
           )}
         </button>
       </motion.div>

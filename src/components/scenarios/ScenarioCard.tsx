@@ -29,8 +29,11 @@ export default function ScenarioCard({
     Basic: 'bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-300',
   };
 
+  // Determine the link destination based on whether it's a VR scenario
+  const linkHref = isVR ? '/vr-demo' : `/scenarios/${slug}`;
+
   return (
-    <Link href={`/scenarios/${slug}`} passHref>
+    <Link href={linkHref} passHref>
       <motion.div
         whileHover={{ scale: 1.05, boxShadow: '0 0 12px rgba(0,0,0,0.2)' }}
         whileTap={{ scale: 0.97 }}

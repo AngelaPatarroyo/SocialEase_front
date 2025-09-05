@@ -110,31 +110,16 @@ export default function Step1({ onNext }: { onNext: (profileData: any) => void }
   };
 
   const getProgressColor = () => {
-    if (progress < 30) return 'from-red-500 to-orange-500';
-    if (progress < 60) return 'from-orange-500 to-yellow-500';
-    if (progress < 90) return 'from-yellow-500 to-green-500';
-    return 'from-green-500 to-blue-500';
-  };
-
-  const getEmoji = (questionIndex: number) => {
-    const emojis = ['😊', '🤔', '💭', '🎯', '🌟', '💪', '📱', '🗣️'];
-    return emojis[questionIndex] || '✨';
+    return 'from-indigo-500 to-indigo-600';
   };
 
   return (
     <div className="space-y-4">
       {/* Progress Header */}
       <div className="text-center space-y-2">
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-2xl"
-        >
-          {getEmoji(currentQuestion)}
-        </motion.div>
         
         <div className="space-y-1">
-          <h2 className="text-lg font-bold text-indigo-800 dark:text-indigo-200">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
             Question {currentQuestion + 1} of {total}
           </h2>
           <p className="text-sm text-gray-600 dark:text-gray-300">

@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { showNotification } from '@/components/Notification';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
+import { showNotification } from '@/components/common/Notification';
 import api from '@/utils/api';
-import SelfAssessmentModal from '@/components/SelfAssessmentModal';
+import SelfAssessmentModal from '@/components/scenarios/SelfAssessment/SelfAssessmentModal';
 import { motion } from 'framer-motion';
 import {
   LABELS,
@@ -15,20 +17,51 @@ import {
 } from '@/utils/selfAssessment';
 
 export default function SelfAssessmentPage() {
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const [sa, setSa] = useState<SelfAssessmentView | null>(null);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
 
+  // Redirect if not authenticated
   useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
+
+  useEffect(() => {
+    if (authLoading || !user) return;
+    
     const load = async () => {
       try {
         const token = localStorage.getItem('token');
-        if (!token) return;
-        const res = await api.get('/self-assessment', {
+        if (!token) {
+          console.log('No token found');
+          return;
+        }
+        console.log('Making API call to /api/self-assessment...');
+        const res = await api.get('/api/self-assessment', {
           headers: { Authorization: `Bearer ${token}` },
         });
+        console.log('API call completed successfully');
+        
         const list = extractList(res?.data);
-        setSa(list.length ? normalizeSelfAssessment(list[0]) : null);
+        console.log('Extracted list length:', list.length);
+        
+        if (list.length > 0) {
+          try {
+            const normalized = normalizeSelfAssessment(list[0]);
+            console.log('Normalized self-assessment:', normalized);
+            setSa(normalized);
+          } catch (error) {
+            console.error('Error normalizing self-assessment:', error);
+            setSa(null);
+          }
+        } else {
+          console.log('No self-assessment data found');
+          setSa(null);
+        }
       } catch (e) {
         console.error('Failed to load self-assessment', e);
       } finally {
@@ -36,7 +69,7 @@ export default function SelfAssessmentPage() {
       }
     };
     load();
-  }, []);
+  }, [authLoading, user]);
 
   const addGoal = async (title: string, target = 1, daysFromNow = 7) => {
     try {
@@ -47,7 +80,7 @@ export default function SelfAssessmentPage() {
         .slice(0, 10);
 
       // de-dupe against server
-      const existing = await api.get('/goals', { headers: { Authorization: `Bearer ${token}` } });
+      const existing = await api.get('/api/goals', { headers: { Authorization: `Bearer ${token}` } });
       const exists = (existing.data?.data || [])
         .some((g: any) => String(g.title || '').toLowerCase() === title.toLowerCase());
       if (exists) {
@@ -55,7 +88,7 @@ export default function SelfAssessmentPage() {
         return;
       }
 
-      await api.post('/goals', { title, target, deadline }, {
+      await api.post('/api/goals', { title, target, deadline }, {
         headers: { Authorization: `Bearer ${token}` },
       });
       showNotification('success', 'Added!', 'Goal added to your dashboard.');
@@ -86,7 +119,7 @@ export default function SelfAssessmentPage() {
       .map(lower => titles.find(t => t.toLowerCase() === lower) as string);
 
     // de-dupe vs server
-    const existing = await api.get('/goals', { headers: { Authorization: `Bearer ${token}` } });
+    const existing = await api.get('/api/goals', { headers: { Authorization: `Bearer ${token}` } });
     const existingTitles = new Set(
       (existing.data?.data || []).map((g: any) => String(g.title || '').toLowerCase())
     );
@@ -102,7 +135,7 @@ export default function SelfAssessmentPage() {
 
     try {
       await Promise.all(payloads.map(p =>
-        api.post('/goals', p, { headers: { Authorization: `Bearer ${token}` } })
+        api.post('/api/goals', p, { headers: { Authorization: `Bearer ${token}` } })
       ));
       showNotification('success', 'Goals added', 'Your goals have been added to the dashboard.');
     } catch (e) {
@@ -192,20 +225,44 @@ export default function SelfAssessmentPage() {
           </div>
         </div>
 
-        {loading && <p className="text-gray-600 dark:text-gray-300">Loading…</p>}
-
-        {!loading && !sa && (
-          <p className="text-gray-600 dark:text-gray-300">
-            No self-assessment yet. Start one to get personalized suggestions.
-          </p>
+        {authLoading && (
+          <div className="text-center py-8">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-4"></div>
+            <p className="text-gray-600 dark:text-gray-300">Loading authentication...</p>
+          </div>
         )}
 
-        {!loading && sa && (
+        {!authLoading && loading && (
+          <div className="text-center py-8">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-4"></div>
+            <p className="text-gray-600 dark:text-gray-300">Loading your self-assessment...</p>
+          </div>
+        )}
+
+        {!authLoading && !loading && !sa && (
+          <div className="text-center py-8">
+            <div className="text-gray-400 dark:text-gray-500 text-4xl mb-4">📝</div>
+            <p className="text-gray-600 dark:text-gray-300 text-lg mb-4">
+              No self-assessment completed yet.
+            </p>
+            <p className="text-gray-500 dark:text-gray-400 mb-6">
+              Complete your first self-assessment to get personalized suggestions and goals.
+            </p>
+            <button
+              onClick={() => setShowModal(true)}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-6 rounded-lg transition-colors"
+            >
+              Start Self-Assessment
+            </button>
+          </div>
+        )}
+
+        {!authLoading && !loading && sa && (
           <>
             {/* Assessment Summary */}
-            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 p-6 rounded-xl border border-indigo-200 dark:border-indigo-700 mb-8">
-              <h2 className="text-xl font-bold text-indigo-800 dark:text-indigo-200 mb-4 flex items-center gap-2">
-                📊 Assessment Summary
+            <div className="bg-white dark:bg-gray-700 p-6 rounded-xl shadow mb-8">
+              <h2 className="text-lg font-semibold text-indigo-600 dark:text-indigo-300 mb-4">
+                Assessment Summary
               </h2>
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
@@ -245,9 +302,9 @@ export default function SelfAssessmentPage() {
             </div>
 
             {/* Suggested Next Steps */}
-            <div className="space-y-4">
-              <h2 className="text-xl font-bold text-indigo-800 dark:text-indigo-200 flex items-center gap-2">
-                🎯 Suggested Next Steps
+            <div className="bg-white dark:bg-gray-700 p-6 rounded-xl shadow mb-8">
+              <h2 className="text-lg font-semibold text-indigo-600 dark:text-indigo-300 mb-4">
+                Suggested Next Steps
               </h2>
               <div className="grid gap-4">
                 {sa.insights.suggestions.map((s, i) => (
@@ -256,7 +313,7 @@ export default function SelfAssessmentPage() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.1 }}
-                    className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200"
+                    className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                   >
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex-1">
@@ -275,9 +332,9 @@ export default function SelfAssessmentPage() {
               </div>
             </div>
 
-            <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
-              <p className="text-sm text-blue-800 dark:text-blue-200 text-center">
-                💡 <strong>Remember:</strong> This guidance is informational and not a medical or psychological diagnosis. 
+            <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-300 text-center">
+                <strong>Note:</strong> This guidance is informational and not a medical or psychological diagnosis. 
                 Use it as a starting point for your personal growth journey.
               </p>
             </div>
@@ -294,14 +351,14 @@ export default function SelfAssessmentPage() {
               if (!token) return;
               
               // Refresh self-assessment data
-              const res = await api.get('/self-assessment', {
+              const res = await api.get('/api/self-assessment', {
                 headers: { Authorization: `Bearer ${token}` },
               });
               const list = extractList(res?.data);
               setSa(list.length ? normalizeSelfAssessment(list[0]) : null);
               
               // Show success message about XP earned
-              showNotification('success', 'Assessment Updated! 🎉', 'Your self-assessment has been updated and you earned XP!');
+              showNotification('success', 'Assessment Updated!', 'Your self-assessment has been updated and you earned XP!');
             } catch (error) {
               console.error('Failed to refresh self-assessment data:', error);
             }

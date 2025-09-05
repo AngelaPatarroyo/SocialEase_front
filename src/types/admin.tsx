@@ -1,25 +1,41 @@
 export interface AdminUser {
-  id: string;
+  _id: string;
   name: string;
   email: string;
   role: 'user' | 'admin';
-  status: 'active' | 'suspended' | 'banned';
+  status?: 'active' | 'suspended' | 'banned';
   createdAt: string;
-  lastLogin: string;
+  lastLogin?: string;
   avatar?: string;
   xp: number;
   level: number;
+  streak?: number;
+  badges?: string[];
+  hasCompletedSelfAssessment?: boolean;
+  goals?: any[];
+  provider?: string;
+  theme?: string;
+  updatedAt?: string;
+  lastCompletedDate?: string;
+  selfAssessmentCompletedAt?: string;
+  selfAssessmentUpdatedAt?: string;
 }
 
 export interface UserFeedback {
   _id: string;
-  userId: string;
-  userName: string;
-  scenarioId: string;
-  scenarioName: string;
-  rating: number;
+  userId: {
+    _id: string;
+    name: string;
+    email?: string;
+  };
+  scenarioId: {
+    _id: string;
+    title: string;
+    slug?: string;
+  };
   reflection: string;
-  priority: 'low' | 'medium' | 'high' | 'critical';
+  rating: number;
+  priority?: 'low' | 'medium' | 'high' | 'critical';
   createdAt: string;
   updatedAt: string;
 }
@@ -28,7 +44,7 @@ export interface SystemActivity {
   type: 'feedback' | 'user' | 'progress' | 'assessment';
   action: string;
   user: {
-    _id?: string;
+    _id: string;
     name: string;
     email: string;
   };

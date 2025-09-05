@@ -109,7 +109,7 @@ export default function Step2Conversation() {
   const { user } = useAuth();
   
   // Get user's name or fallback to "there"
-  const userName = user?.name || user?.firstName || 'there';
+  const userName = user?.name || 'there';
   
   // Get dialogue with user's name
   const dialogue = getDialogue(userName);

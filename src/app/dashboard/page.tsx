@@ -6,8 +6,8 @@ import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import api from '@/utils/api';
 import Image from 'next/image';
-import AddGoalModal from '@/components/AddGoalModal';
-import SelfAssessmentModal from '@/components/SelfAssessmentModal';
+import AddGoalModal from '@/components/forms/AddGoalModal';
+import SelfAssessmentModal from '@/components/scenarios/SelfAssessment/SelfAssessmentModal';
 import {
   extractList,
   normalize as normalizeSelfAssessment,
@@ -15,7 +15,7 @@ import {
   type SelfAssessmentView,
 } from '@/utils/selfAssessment';
 import { motion, AnimatePresence } from 'framer-motion';
-import { showNotification } from '@/components/Notification';
+import { showNotification } from '@/components/common/Notification';
 
 const BADGE_CATALOG: Record<string, { name: string; image: string }> = {
   // XP Milestone Badges (100-1000 XP)
@@ -91,24 +91,15 @@ export default function DashboardPage() {
         try {
           const token = localStorage.getItem('token');
           if (token) {
-            // Add a small delay to ensure backend has processed the XP update
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            console.log('[Dashboard] Refreshing data after scenario completion...');
-            
-            const fresh = await api.get('/user/dashboard', {
+            // Refresh dashboard data to show updated XP
+            const fresh = await api.get('/api/user/dashboard', {
               headers: { Authorization: `Bearer ${token}` },
             });
             
-            console.log('[Dashboard] Fresh dashboard data:', fresh.data?.data);
-            console.log('[Dashboard] Fresh XP value:', fresh.data?.data?.stats?.xp);
-            
             setDashboard(fresh.data?.data ?? null);
             
-            // Also refresh user profile to ensure XP is updated there too
-            await refreshProfile();
-            
-            console.log('[Dashboard] Refresh complete');
+            // Refresh profile in background
+            refreshProfile();
           }
         } catch (error) {
           console.log('Dashboard refresh failed:', error);
@@ -130,20 +121,14 @@ export default function DashboardPage() {
         return;
       }
       try {
-        const res = await api.get('/user/dashboard', {
+        // Single API call to get dashboard data
+        const res = await api.get('/api/user/dashboard', {
           headers: { Authorization: `Bearer ${token}` },
         });
         setDashboard(res.data?.data ?? null);
 
-        // Debug badge data
-        console.log('[Dashboard] Badge data from backend:', {
-          userBadges: res.data?.data?.user?.badges,
-          statsBadges: res.data?.data?.stats?.badges,
-          fullUser: res.data?.data?.user,
-          fullStats: res.data?.data?.stats
-        });
-
-        const saRes = await api.get('/self-assessment', {
+        // Get self-assessment status in parallel
+        const saRes = await api.get('/api/self-assessment', {
           headers: { Authorization: `Bearer ${token}` },
         });
         const list = extractList(saRes?.data);
@@ -152,15 +137,8 @@ export default function DashboardPage() {
         setShowSelfAssessment(!hasCompleted);
         setSelfAssessment(hasCompleted ? normalizeSelfAssessment(list[0]) : null);
 
-        await refreshProfile();
-        
-        // No need to clean localStorage XP since we're not using it anymore
-        
-        // Sync backend XP data
-        const backendXP = res.data?.data?.stats?.xp || 0;
-        if (backendXP > 0) {
-          console.log('[Dashboard] Backend XP loaded:', backendXP);
-        }
+        // Refresh profile in background (don't await)
+        refreshProfile();
       } catch (e) {
         console.error(e);
         setError(true);
@@ -175,11 +153,7 @@ export default function DashboardPage() {
     if (dashboard && dashboard.stats && dashboard.stats.badges) {
       const currentBadges = dashboard.stats.badges;
       
-      console.log('[Dashboard] Badge detection:', {
-        currentBadges,
-        previousBadges: previousBadges.current,
-        currentXP: dashboard.stats.xp
-      });
+      // Optimized badge detection - only log when new badges are found
       
       // Check for new badges by comparing with previous badges
       if (previousBadges.current.length > 0) {
@@ -187,13 +161,9 @@ export default function DashboardPage() {
           !previousBadges.current.includes(badge)
         );
         
-        console.log('[Dashboard] New badges found:', newBadgeKeys);
-        
         if (newBadgeKeys.length > 0) {
           setNewBadges(newBadgeKeys);
           setShowBadgeNotification(true);
-          
-          console.log('[Dashboard] Badge notification triggered for:', newBadgeKeys);
           
           // Auto-hide notification after 5 seconds
           setTimeout(() => {
@@ -213,14 +183,8 @@ export default function DashboardPage() {
         if (currentXP >= 400) expectedBadges.push('dedicated_practitioner');
         if (currentXP >= 500) expectedBadges.push('halfway_hero');
         
-        console.log('[Dashboard] Expected badges for', currentXP, 'XP:', expectedBadges);
-        console.log('[Dashboard] Actual badges from backend:', currentBadges);
-        
         // Check for missing badges that should be awarded
         const missingBadges = expectedBadges.filter(badge => !currentBadges.includes(badge));
-        if (missingBadges.length > 0) {
-          console.log('[Dashboard] Missing badges that should be awarded:', missingBadges);
-        }
       }
       
       // Update previous badges for next comparison
@@ -259,16 +223,7 @@ export default function DashboardPage() {
   const xpIntoLevel = xp % 100;
   const progressPercentage = xpForNextLevel > 0 ? Math.min((xpIntoLevel / xpForNextLevel) * 100, 100) : 0;
 
-  const rawBadges: any[] = Array.isArray(user.badges) ? user.badges : (Array.isArray(stats.badges) ? stats.badges : []);
-  
-  // Debug badge processing
-  console.log('[Dashboard] Badge processing:', {
-    userBadges: user.badges,
-    statsBadges: stats.badges,
-    rawBadges,
-    user,
-    stats
-  });
+    const rawBadges: any[] = Array.isArray(user.badges) ? user.badges : (Array.isArray(stats.badges) ? stats.badges : []);
   
   const badges = rawBadges.map((b) => {
     if (typeof b === 'string') {
@@ -285,7 +240,7 @@ export default function DashboardPage() {
     };
   });
   
-  console.log('[Dashboard] Processed badges:', badges);
+
 
   const DESIRED_COUNT = 3;
   const recInput = Array.isArray(selfAssessment?.insights?.recommended)
@@ -311,14 +266,14 @@ export default function DashboardPage() {
     
     try {
       const { goalId } = deleteGoalConfirmation;
-      await api.delete(`/goals/${goalId}`);
+              await api.delete(`/api/goals/${goalId}`);
       
       showNotification('success', 'Goal Deleted', 'Your goal has been successfully removed.');
       
       // Refresh dashboard data
       const token = localStorage.getItem('token');
       if (token) {
-        const fresh = await api.get('/user/dashboard', { headers: { Authorization: `Bearer ${token}` } });
+        const fresh = await api.get('/api/user/dashboard', { headers: { Authorization: `Bearer ${token}` } });
         setDashboard(fresh.data?.data ?? null);
       }
     } catch (error: any) {
@@ -341,12 +296,12 @@ export default function DashboardPage() {
     try {
       const token = localStorage.getItem('token');
       if (!token) return;
-      await api.put(`/goals/${goalId}/progress`, { progress: newProgress }, { headers: { Authorization: `Bearer ${token}` } });
+      await api.put(`/api/goals/${goalId}/progress`, { progress: newProgress }, { headers: { Authorization: `Bearer ${token}` } });
       
       showNotification('success', 'Progress Updated', 'Your goal progress has been updated successfully.');
       
       // Refresh dashboard data
-      const fresh = await api.get('/user/dashboard', { headers: { Authorization: `Bearer ${token}` } });
+      const fresh = await api.get('/api/user/dashboard', { headers: { Authorization: `Bearer ${token}` } });
       setDashboard(fresh.data?.data ?? null);
     } catch (error) {
       showNotification('error', 'Update Failed', 'Could not update progress. Please try again.');
@@ -427,7 +382,7 @@ export default function DashboardPage() {
               // Refresh dashboard data
               const token = localStorage.getItem('token');
               if (token) {
-                const res = await api.get('/user/dashboard', {
+                const res = await api.get('/api/user/dashboard', {
                   headers: { Authorization: `Bearer ${token}` },
                 });
                 setDashboard(res.data?.data ?? null);
@@ -445,7 +400,7 @@ export default function DashboardPage() {
               // Refresh dashboard data
               const token = localStorage.getItem('token');
               if (token) {
-                api.get('/user/dashboard', {
+                api.get('/api/user/dashboard', {
                   headers: { Authorization: `Bearer ${token}` },
                 }).then(res => {
                   setDashboard(res.data?.data ?? null);
@@ -455,35 +410,65 @@ export default function DashboardPage() {
           />
         )}
 
-      <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-8">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-bold text-indigo-700 dark:text-white">
-            Hi {displayName}, welcome back
-          </h1>
-          <p className="text-gray-600 dark:text-gray-300 mt-2">Here is your current progress.</p>
-        </div>
-        <div className="flex items-center gap-4">
-          {/* Admin Panel Link - Only visible to admin users */}
-          {user.role === 'admin' && (
-            <Link
-              href="/admin"
-              className="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg shadow transition-colors"
-            >
-              🛡️ Admin Panel
-            </Link>
-          )}
+      {/* Top Section with Welcome Message, Wizard Blob, and Profile */}
+      <div className="flex flex-col items-center text-center mb-8">
+        {/* Welcome Message */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-2xl p-6 shadow-lg max-w-md mb-6"
+        >
+          <p className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-2">
+            Welcome back, {user?.name}!
+          </p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Ready to continue your social confidence journey?
+          </p>
+        </motion.div>
+        
+        {/* Wizard Blob and Profile - Side by Side */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="flex items-center justify-center gap-12 mb-6"
+        >
+          {/* Wizard Blob - Left */}
+          <Image 
+            src="/images/wizard-blob.png" 
+            alt="Wizard Blob" 
+            width={140} 
+            height={140} 
+            className="drop-shadow-lg"
+          />
+          
+          {/* Profile Button - Right */}
           <button
             onClick={handleGoToProfile}
             title="Update your profile"
             className="rounded-full border-4 border-indigo-500 shadow-md hover:scale-105 transition-transform"
           >
-            <Image src={avatarSrc} alt="User Avatar" width={90} height={90} className="rounded-full" />
+            <Image src={avatarSrc} alt="User Avatar" width={80} height={80} className="rounded-full" />
           </button>
-        </div>
-      </div>
-
-      <div className="flex justify-center mb-6">
-        <Image src="/images/wizard-blob.png" alt="Friendly wizard mascot" width={120} height={120} className="rounded-full shadow-md" />
+        </motion.div>
+        
+        {/* Admin Panel Link - Below Wizard and Profile */}
+        {user.role === 'admin' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="mb-4"
+          >
+            <Link
+              href="/admin"
+              className="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg shadow transition-colors"
+            >
+              Admin Panel
+            </Link>
+          </motion.div>
+        )}
       </div>
 
       {/* Quick Navigation Section */}
@@ -683,11 +668,11 @@ export default function DashboardPage() {
                 try {
                   const token = localStorage.getItem('token');
                   await api.put(
-                    `/goals/${id}/progress`,
-                    { increment: 1 },
-                    { headers: { Authorization: `Bearer ${token}` } }
+                                      `/api/goals/${id}/progress`,
+                  { increment: 1 },
+                  { headers: { Authorization: `Bearer ${token}` } }
                   );
-                  const fresh = await api.get('/user/dashboard', { headers: { Authorization: `Bearer ${token}` } });
+                  const fresh = await api.get('/api/user/dashboard', { headers: { Authorization: `Bearer ${token}` } });
                   setDashboard(fresh.data?.data ?? null);
                 } catch {
                   showNotification('error', 'Error', 'Could not update progress.');
@@ -706,13 +691,17 @@ export default function DashboardPage() {
                       <h4 className="font-semibold text-indigo-700 dark:text-indigo-200">{title}</h4>
                     </div>
                     <span
-                      className={`text-xs px-2 py-1 rounded-full ${
+                      className={`inline-flex items-center gap-1.5 text-[10px] font-semibold tracking-wide px-2.5 py-1 rounded-full border ${
                         completed
-                          ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-200'
-                          : 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-200'
+                          ? 'bg-green-50 text-green-700 border-green-300 dark:bg-green-900/20 dark:text-green-200 dark:border-green-700'
+                          : 'bg-indigo-50 text-indigo-700 border-indigo-300 dark:bg-indigo-900/20 dark:text-indigo-200 dark:border-indigo-600/60'
                       }`}
                     >
-                      {completed ? 'Completed' : 'In progress'}
+                      <span
+                        className={`${completed ? 'bg-green-500' : 'bg-indigo-500'} w-1.5 h-1.5 rounded-full`}
+                        aria-hidden
+                      />
+                      {completed ? 'COMPLETED' : 'IN PROGRESS'}
                     </span>
                   </div>
 
@@ -835,30 +824,30 @@ export default function DashboardPage() {
 
       {/* Delete Goal Confirmation Modal */}
       {deleteGoalConfirmation && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 p-2 sm:p-4">
+          <div className="relative top-10 sm:top-20 mx-auto p-3 sm:p-5 border w-full max-w-sm shadow-lg rounded-md bg-white dark:bg-gray-800">
             <div className="mt-3 text-center">
               <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/40">
                 <svg className="h-6 w-6 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mt-4">Delete Goal</h3>
-              <div className="mt-2 px-7">
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+              <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-gray-100 mt-3 sm:mt-4">Delete Goal</h3>
+              <div className="mt-2 px-3 sm:px-7">
+                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                   Are you sure you want to delete the goal "{deleteGoalConfirmation.goalName}"? This action cannot be undone.
                 </p>
               </div>
-              <div className="flex justify-center space-x-3 mt-6">
+              <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-3 mt-4 sm:mt-6">
                 <button
                   onClick={cancelDeleteGoal}
-                  className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                  className="px-3 sm:px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-sm sm:text-base"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={confirmDeleteGoal}
-                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                  className="px-3 sm:px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm sm:text-base"
                 >
                   Delete Goal
                 </button>

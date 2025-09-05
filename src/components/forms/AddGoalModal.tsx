@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { showNotification } from '@/components/Notification';
+import { showNotification } from '@/components/common/Notification';
 import api from '@/utils/api';
 
 type Props = {
@@ -45,7 +45,7 @@ export default function AddGoalModal({ onClose, onSuccess }: Props) {
       if (!token) return;
 
       // de-dupe: skip if same title already exists on server
-      const existing = await api.get('/goals', { headers: { Authorization: `Bearer ${token}` } });
+      const existing = await api.get('/api/goals', { headers: { Authorization: `Bearer ${token}` } });
       const exists = (existing.data?.data || []).some(
         (g: any) => String(g.title || '').toLowerCase() === trimmed.toLowerCase()
       );
@@ -63,7 +63,7 @@ export default function AddGoalModal({ onClose, onSuccess }: Props) {
       if (deadlineISO) payload.deadline = deadlineISO;
       if (reminderISO) payload.reminder = reminderISO;
 
-      await api.post('/goals', payload, { headers: { Authorization: `Bearer ${token}` } });
+      await api.post('/api/goals', payload, { headers: { Authorization: `Bearer ${token}` } });
       
       showNotification('success', 'Goal Added', 'Your goal has been created successfully.');
       
@@ -77,14 +77,14 @@ export default function AddGoalModal({ onClose, onSuccess }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-md rounded-2xl bg-white dark:bg-gray-800 shadow-xl">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-indigo-700 dark:text-indigo-200">Add new goal</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:text-gray-300">✕</button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-2 sm:p-4">
+      <div className="w-full max-w-md mx-2 rounded-2xl bg-white dark:bg-gray-800 shadow-xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-3 sm:px-5 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700">
+          <h3 className="text-base sm:text-lg font-semibold text-indigo-700 dark:text-indigo-200">Add new goal</h3>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:text-gray-300 text-lg sm:text-xl">✕</button>
         </div>
 
-        <form onSubmit={handleSubmit} className="px-5 py-4 space-y-4">
+        <form onSubmit={handleSubmit} className="px-3 sm:px-5 py-3 sm:py-4 space-y-3 sm:space-y-4">
           {/* Error Message */}
           {error && (
             <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300 text-sm">
@@ -115,7 +115,7 @@ export default function AddGoalModal({ onClose, onSuccess }: Props) {
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-3 sm:gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Deadline</label>
               <input
@@ -136,7 +136,7 @@ export default function AddGoalModal({ onClose, onSuccess }: Props) {
             </div>
           </div>
 
-          <div className="pt-2 flex justify-end gap-3">
+          <div className="pt-2 flex flex-col sm:flex-row justify-end gap-2 sm:gap-3">
             <button
               type="button"
               onClick={onClose}

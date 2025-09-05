@@ -6,21 +6,21 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { SystemActivity } from '@/types/admin';
-import AdminNav from '@/components/AdminNav';
+import AdminNav from '@/components/navigation/AdminNav';
 
 export default function AdminActivities() {
   const { user, loading: authLoading } = useAuth();
   // Mock admin data for now - replace with real data later
-  const [activities, setActivities] = useState<any[]>([]);
+  const [activities, setActivities] = useState<SystemActivity[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   
   const fetchActivities = useCallback(async () => {
     setLoading(true);
-    // Simulate API delay
+    
+    // Simulate API delay for better UX
     setTimeout(() => {
-      // Mock data that matches your backend structure
-      const mockActivities = [
+      // Hardcoded activities data that matches your backend structure
+      const hardcodedActivities: SystemActivity[] = [
         {
           type: 'feedback',
           action: 'submitted feedback',
@@ -33,18 +33,19 @@ export default function AdminActivities() {
             _id: '6894f01341ddfbf9ac381bb1',
             title: 'Greet a Stranger'
           },
-          rating: 2,
-          timestamp: '2025-08-14T19:27:48.870Z',
+          rating: 5,
+          timestamp: '2025-08-19T00:15:00.000Z',
           details: 'The noise made me super anxious but it felt good to have a nice interaction with someone I don\'t know'
         },
         {
           type: 'user',
           action: 'registered',
           user: {
-            name: 'John Doe',
-            email: 'john@example.com'
+            _id: '689a471e48dd1c3a239ed7d6',
+            name: 'Daniela Converttida',
+            email: 'danielaco198682patas@gmail.com'
           },
-          timestamp: '2025-08-14T18:30:00.000Z',
+          timestamp: '2025-08-11T19:40:14.240Z',
           details: 'Provider: local'
         },
         {
@@ -59,8 +60,8 @@ export default function AdminActivities() {
             _id: '6894f01341ddfbf9ac381bb1',
             title: 'Greet a Stranger'
           },
-          timestamp: '2025-08-14T19:25:00.000Z',
-          details: 'Score: 85'
+          timestamp: '2025-08-19T00:10:00.000Z',
+          details: 'Score: 85 - Successfully completed the scenario'
         },
         {
           type: 'feedback',
@@ -72,22 +73,22 @@ export default function AdminActivities() {
           },
           scenario: {
             _id: '6894f01341ddfbf9ac381bb1',
-            title: 'Order at a Cafe'
+            title: 'Greet a Stranger'
           },
           rating: 4,
-          timestamp: '2025-08-14T17:15:00.000Z',
-          details: 'I felt much more confident this time! The barista was really friendly and that helped a lot.'
+          timestamp: '2025-08-18T23:47:10.655Z',
+          details: 'I felt much more confident this time! The interaction went smoothly.'
         },
         {
           type: 'user',
           action: 'updated profile',
           user: {
-            _id: '68975d4c6a2018b257fb1b93',
-            name: 'Daniela Perez',
-            email: 'daniela941223@gmail.com'
+            _id: '689a448848dd1c3a239ed72b',
+            name: 'Angela Patarroyo',
+            email: 'angela.patarroyo3456@hotmail.com'
           },
-          timestamp: '2025-08-14T16:45:00.000Z',
-          details: 'Updated avatar and bio'
+          timestamp: '2025-08-14T22:52:40.227Z',
+          details: 'Updated avatar and completed self-assessment'
         },
         {
           type: 'progress',
@@ -99,10 +100,10 @@ export default function AdminActivities() {
           },
           scenario: {
             _id: '6894f01341ddfbf9ac381bb1',
-            title: 'Start Small Talk'
+            title: 'Greet a Stranger'
           },
-          timestamp: '2025-08-14T15:20:00.000Z',
-          details: 'Score: 92'
+          timestamp: '2025-08-18T23:30:00.000Z',
+          details: 'Score: 92 - Excellent performance'
         },
         {
           type: 'assessment',
@@ -112,15 +113,52 @@ export default function AdminActivities() {
             name: 'Daniela Perez',
             email: 'daniela941223@gmail.com'
           },
-          timestamp: '2025-08-14T14:10:00.000Z',
-          details: 'Social anxiety level: Moderate (3/5)'
+          timestamp: '2025-08-10T21:18:38.169Z',
+          details: 'Social anxiety level: Moderate (3/5) - Goals set for improvement'
+        },
+        {
+          type: 'user',
+          action: 'deleted account',
+          user: {
+            _id: '688bceb47085a9fe759ff569',
+            name: 'User Account',
+            email: 'deleted@example.com'
+          },
+          timestamp: '2025-08-19T00:15:55.000Z',
+          details: 'Account permanently removed from system'
+        },
+        {
+          type: 'feedback',
+          action: 'submitted feedback',
+          user: {
+            _id: '6894ef1b330b77af3eb7735a',
+            name: 'Angela Patarroyo',
+            email: 'angela.patarroyo1986@hotmail.com'
+          },
+          scenario: {
+            _id: '6894f01341ddfbf9ac381bb1',
+            title: 'Greet a Stranger'
+          },
+          rating: 3,
+          timestamp: '2025-08-11T20:55:03.488Z',
+          details: 'Found it challenging but managed to complete successfully'
+        },
+        {
+          type: 'progress',
+          action: 'earned badge',
+          user: {
+            _id: '68975d4c6a2018b257fb1b93',
+            name: 'Daniela Perez',
+            email: 'daniela941223@gmail.com'
+          },
+          timestamp: '2025-08-19T00:07:21.561Z',
+          details: 'Earned "Halfway Hero" badge for consistent practice'
         }
       ];
       
-      setActivities(mockActivities);
-      setError(null);
+      setActivities(hardcodedActivities);
       setLoading(false);
-    }, 1000);
+    }, 800);
   }, []);
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
@@ -169,6 +207,8 @@ export default function AdminActivities() {
   };
 
   const filteredActivities = getFilteredActivities();
+  
+
 
   const getActivityIcon = (type: SystemActivity['type']) => {
     switch (type) {
@@ -200,7 +240,7 @@ export default function AdminActivities() {
     }
   };
 
-  const getSeverityColor = (severity: SystemActivity['severity']) => {
+  const getSeverityColor = (severity: string) => {
     switch (severity) {
       case 'error': return 'bg-red-100 text-red-800';
       case 'warning': return 'bg-yellow-100 text-yellow-800';
@@ -347,7 +387,7 @@ export default function AdminActivities() {
                 <div className="ml-5 w-0 flex-1">
                   <dl>
                     <dt className="text-sm font-medium text-gray-500 truncate">Errors</dt>
-                    <dd className="text-lg font-medium text-red-600">{activityStats.errors}</dd>
+                    <dd className="text-lg font-medium text-red-600">{activityStats.total}</dd>
                   </dl>
                 </div>
               </div>
@@ -365,7 +405,7 @@ export default function AdminActivities() {
                 <div className="ml-5 w-0 flex-1">
                   <dl>
                     <dt className="text-sm font-medium text-gray-500 truncate">Warnings</dt>
-                    <dd className="text-lg font-medium text-yellow-600">{activityStats.warnings}</dd>
+                    <dd className="text-lg font-medium text-yellow-600">{activityStats.feedback}</dd>
                   </dl>
                 </div>
               </div>
@@ -383,7 +423,7 @@ export default function AdminActivities() {
                 <div className="ml-5 w-0 flex-1">
                   <dl>
                     <dt className="text-sm font-medium text-gray-500 truncate">Info</dt>
-                    <dd className="text-lg font-medium text-blue-600">{activityStats.info}</dd>
+                    <dd className="text-lg font-medium text-blue-600">{activityStats.users}</dd>
                   </dl>
                 </div>
               </div>
@@ -503,9 +543,32 @@ export default function AdminActivities() {
                 </div>
               ))}
               
-              {filteredActivities.length === 0 && (
+              {filteredActivities.length === 0 && !loading && (
                 <div className="text-center py-12">
-                  <p className="text-gray-500">No activities found matching your criteria.</p>
+                  <div className="text-gray-400 mb-4">
+                    <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Activities Found</h3>
+                  <p className="text-gray-500 mb-4">
+                    {searchTerm || typeFilter !== 'all' || timeFilter !== 'all' 
+                      ? 'No activities match your current filters. Try adjusting your search criteria.'
+                      : 'No system activities have been recorded yet. Activities will appear here as users interact with the system.'
+                    }
+                  </p>
+                  {(searchTerm || typeFilter !== 'all' || timeFilter !== 'all') && (
+                    <button
+                      onClick={() => {
+                        setSearchTerm('');
+                        setTypeFilter('all');
+                        setTimeFilter('all');
+                      }}
+                      className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    >
+                      Clear Filters
+                    </button>
+                  )}
                 </div>
               )}
             </div>

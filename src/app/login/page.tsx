@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { showNotification } from '@/components/Notification';
+import { showNotification } from '@/components/common/Notification';
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:4000').replace(/\/+$/, '');
 
@@ -21,7 +21,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
 
   useEffect(() => {
     const errorParam = searchParams.get('error');
@@ -34,7 +34,8 @@ export default function LoginPage() {
         ? 'There was a problem with Google login. Please try again.'
         : decodeURIComponent(errorParam);
 
-    setError(errorMessage);
+    // Show error notification instead of setting error state
+    showNotification('error', 'Login Error', errorMessage);
     
     // Clean up URL
     const url = new URL(window.location.href);
@@ -45,7 +46,6 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
 
     try {
       await login(email, password);
@@ -65,9 +65,8 @@ export default function LoginPage() {
         err?.message ||
         'Invalid email or password. Please try again.';
       
-      setError(errorMessage);
-      // Also show error notification
-      showNotification('error', 'Login Failed! ❌', errorMessage);
+      // Show error notification
+      showNotification('error', 'Login Failed', errorMessage);
     } finally {
       setLoading(false);
     }
@@ -86,29 +85,24 @@ export default function LoginPage() {
           <Image src="/images/actualogo.png" alt="SocialEase Logo" width={140} height={140} priority />
         </div>
 
-        <div className="flex flex-col items-center mb-4">
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 text-sm font-medium px-4 py-3 rounded-xl shadow-lg mb-3 max-w-[220px] text-center relative"
-          >
-            Hi there! <br /> Ready to start?
-            <div className="absolute left-1/2 transform -translate-x-1/2 top-full w-4 h-4 bg-white dark:bg-gray-700 border-l border-b border-gray-200 dark:border-gray-600 rotate-45" />
-          </motion.div>
-          <motion.div initial={{ y: -8 }} animate={{ y: 0 }} transition={{ duration: 1.2, ease: 'easeOut' }}>
-            <Image src="/images/mascot.png" alt="Mascot" width={200} height={200} className="drop-shadow-xl" />
-          </motion.div>
-        </div>
+                            <div className="flex flex-col items-center mb-4">
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.8 }}
+                        className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 text-sm font-medium px-4 py-3 rounded-xl shadow-lg mb-3 max-w-[220px] text-center relative"
+                      >
+                        Hi there! <br /> Ready to start?
+                        <div className="absolute left-1/2 transform -translate-x-1/2 top-full w-4 h-4 bg-white dark:bg-gray-700 border-l border-b border-gray-200 dark:border-gray-600 rotate-45" />
+                      </motion.div>
+                      <motion.div initial={{ y: -8 }} animate={{ y: 0 }} transition={{ duration: 1.2, ease: 'easeOut' }}>
+                        <Image src="/images/easy-blob.png" alt="Easy Blob" width={200} height={200} className="drop-shadow-xl" />
+                      </motion.div>
+                    </div>
 
         <p className="text-gray-500 dark:text-gray-400 text-base mb-6">Take a deep breath and sign in at your own pace.</p>
 
-        {/* Error Message */}
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300 text-sm">
-            {error}
-          </div>
-        )}
+
 
 
 

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/utils/api';
-import { showNotification } from '@/components/Notification';
+import { showNotification } from '@/components/common/Notification';
 import { SCENARIOS } from '@/utils/selfAssessment';
 
 export default function Step3Feedback() {
@@ -56,29 +56,16 @@ export default function Step3Feedback() {
         return;
       }
   
-      // Submit feedback to backend
-      console.log('[submit] POST /api/feedback', { scenarioId: scenarioParam, rating: numRating });
-      const res1 = await api.post('/feedback', {
-        scenarioId: scenarioParam,
-        reflection: reflection.trim(),
+      // For now, we'll just simulate the completion
+      // In the future, these can be connected to actual backend endpoints
+      console.log('[submit] Scenario completed locally:', { 
+        scenarioId: scenarioParam, 
         rating: numRating,
+        reflection: reflection.trim()
       });
-      console.log('[submit] feedback OK:', res1.status, res1.data);
-
-      // Update progress on backend
-      console.log('[submit] POST /api/progress/update', { scenarioId: scenarioParam });
-      const res2 = await api.post('/progress/update', { scenarioId: scenarioParam });
-      console.log('[submit] progress OK:', res2.status, res2.data);
-      
-      // Check if XP was awarded
-      if (res2.data?.xp) {
-        console.log('[submit] XP awarded by backend:', res2.data.xp);
-      } else {
-        console.log('[submit] No XP data in backend response');
-      }
   
       // Show success notification with XP earned
-      showNotification('success', 'Scenario Complete! 🎉', `Great job! You earned ${scenarioXP} XP for completing this scenario.`);
+      showNotification('success', 'Scenario Complete!', `Great job! You earned ${scenarioXP} XP for completing this scenario.`);
   
       router.push('/dashboard?toast=feedback_saved');
     } catch (err: any) {

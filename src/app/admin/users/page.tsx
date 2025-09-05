@@ -6,8 +6,8 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AdminUser } from '@/types/admin';
-import AdminNav from '@/components/AdminNav';
-import { showNotification } from '@/components/Notification';
+import AdminNav from '@/components/navigation/AdminNav';
+import { showNotification } from '@/components/common/Notification';
 
 // Add this function to decode JWT token
 const decodeToken = (token: string) => {
@@ -26,7 +26,7 @@ const decodeToken = (token: string) => {
 export default function AdminUsers() {
   const { user, token, loading: authLoading, logout } = useAuth();
   // Mock admin data for now - replace with real data later
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState<{userId: string, userName: string} | null>(null);
@@ -86,11 +86,11 @@ export default function AdminUsers() {
     }
   }, [user, token]);
   
-  const updateUserStatus = async (userId: string, status: string) => {
-    setUsers(prev => prev.map(u => (u._id === userId || u.id === userId) ? { ...u, status } : u));
+  const updateUserStatus = async (userId: string, status: AdminUser['status']) => {
+    setUsers(prev => prev.map(u => u._id === userId ? { ...u, status } : u));
   };
   
-  const updateUserRole = async (userId: string, role: string) => {
+  const updateUserRole = async (userId: string, role: AdminUser['role']) => {
     try {
       setError(null); // Clear any previous errors
       const response = await fetch(`/api/admin/users/${userId}/role`, {
@@ -109,7 +109,7 @@ export default function AdminUsers() {
       }
       
       // Update local state after successful API call
-      setUsers(prev => prev.map(u => (u._id === userId || u.id === userId) ? { ...u, role } : u));
+      setUsers(prev => prev.map(u => u._id === userId ? { ...u, role } : u));
       
       // Show success notification
       showNotification('success', 'Role Updated! 👑', `User role has been updated to ${role}.`);
@@ -143,7 +143,7 @@ export default function AdminUsers() {
       }
       
       // Remove user from local state after successful API call
-      setUsers(prev => prev.filter(u => (u._id || u.id) !== userId));
+      setUsers(prev => prev.filter(u => u._id !== userId));
       
       // Show success notification with a slight delay
       setTimeout(() => {
@@ -448,9 +448,6 @@ export default function AdminUsers() {
                       Progress
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Social Anxiety
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Joined
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -460,7 +457,7 @@ export default function AdminUsers() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredUsers.map((user, index) => (
-                    <tr key={user._id || user.id || `user-${index}`} className="hover:bg-gray-50">
+                    <tr key={user._id || `user-${index}`} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10">
@@ -483,7 +480,7 @@ export default function AdminUsers() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <select
                           value={user.role}
-                          onChange={(e) => handleRoleChange(user._id || user.id, e.target.value as AdminUser['role'])}
+                          onChange={(e) => handleRoleChange(user._id, e.target.value as AdminUser['role'])}
                           className="text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         >
                           <option value="user">User</option>
@@ -494,7 +491,7 @@ export default function AdminUsers() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <select
                           value={user.status}
-                          onChange={(e) => handleStatusChange(user._id || user.id, e.target.value as AdminUser['status'])}
+                          onChange={(e) => handleStatusChange(user._id, e.target.value as AdminUser['status'])}
                           className="text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         >
                           <option value="active">Active</option>
@@ -507,45 +504,15 @@ export default function AdminUsers() {
                         <div className="space-y-1">
                           <div className="flex items-center">
                             <span className="text-xs font-medium text-gray-500">XP:</span>
-                            <span className="ml-1 font-semibold text-indigo-600">{user.xp || 0}</span>
-                          </div>
-                          <div className="flex items-center">
-                            <span className="text-xs font-medium text-gray-500">Level:</span>
-                            <span className="ml-1 font-semibold text-green-600">{user.level || 1}</span>
-                          </div>
-                          <div className="flex items-center">
-                            <span className="text-xs font-medium text-gray-500">Streak:</span>
-                            <span className="ml-1 font-semibold text-orange-600">{user.streak || 0} days</span>
-                          </div>
-                          <div className="flex items-center">
-                            <span className="text-xs font-medium text-gray-500">Badges:</span>
-                            <span className="ml-1 font-semibold text-purple-600">{user.badges?.length || 0}</span>
-                          </div>
-                        </div>
-                      </td>
-                      
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        <div className="space-y-1">
-                          <div className="flex items-center">
-                            <span className="text-xs font-medium text-gray-500">Level:</span>
-                            <span className={`ml-1 px-2 py-1 rounded-full text-xs font-medium ${
-                              (user.socialAnxietyLevel || 0) <= 2 ? 'bg-green-100 text-green-800' :
-                              (user.socialAnxietyLevel || 0) <= 4 ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-red-100 text-red-800'
-                            }`}>
-                              {user.socialAnxietyLevel || 'N/A'}
+                            <span className="ml-1 px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              {user.xp || 0}
                             </span>
                           </div>
                           <div className="text-xs text-gray-500">
-                            {user.lastAssessmentDate ? 
-                              `Assessed: ${new Date(user.lastAssessmentDate).toLocaleDateString()}` : 
-                              'No assessment'
-                            }
+                            Level {user.level || 1}
                           </div>
                         </div>
                       </td>
-                      
-
                       
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
@@ -554,13 +521,13 @@ export default function AdminUsers() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex space-x-2">
                           <button
-                            onClick={() => router.push(`/admin/users/${user.id}`)}
+                            onClick={() => router.push(`/admin/users/${user._id}`)}
                             className="text-indigo-600 hover:text-indigo-900"
                           >
                             View Details
                           </button>
                           <button
-                            onClick={() => handleDeleteUser(user._id || user.id, user.name)}
+                            onClick={() => handleDeleteUser(user._id, user.name)}
                             className="text-red-600 hover:text-red-900"
                           >
                             Delete

@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import Step1 from './SelfAssessment/Step1';
-import Step2 from './SelfAssessment/Step2';
-import Step3 from './SelfAssessment/Step3';
-import { showNotification } from '@/components/Notification';
+import Step1 from './Step1';
+import Step2 from './Step2';
+import Step3 from './Step3';
+import { showNotification } from '@/components/common/Notification';
 import api from '@/utils/api';
 
 interface SelfAssessmentModalProps {
@@ -111,11 +111,11 @@ export default function SelfAssessmentModal({ onSuccess, onClose }: SelfAssessme
         return;
       }
 
-      await api.post('/self-assessment', payload, {
+      await api.post('/api/self-assessment', payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      showNotification('success', 'Self-Assessment Complete! 🎉', 'You earned 10 XP for completing your self-assessment!');
+      showNotification('success', 'Self-Assessment Complete!', 'You earned 10 XP for completing your self-assessment!');
 
       setCompleted(true);
       await onSuccess?.(payload);
@@ -137,22 +137,22 @@ export default function SelfAssessmentModal({ onSuccess, onClose }: SelfAssessme
       onMouseDown={handleBackdropMouseDown}
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 bg-black/40 z-50 backdrop-blur-sm flex items-center justify-center px-4"
+      className="fixed inset-0 bg-black/40 z-50 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4"
     >
       <div
-        className="bg-white dark:bg-gray-800 max-w-lg w-full p-6 rounded-xl shadow-xl"
+        className="bg-white dark:bg-gray-800 w-full max-w-lg mx-2 rounded-xl shadow-xl p-3 sm:p-6 max-h-[90vh] overflow-y-auto"
         onMouseDown={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4 border-b border-gray-200 dark:border-gray-600 pb-3">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Self-Assessment</h2>
           <button
             type="button"
             onClick={onClose}
             disabled={submitting}
-            className="rounded-lg px-3 py-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Close
+            ✕
           </button>
         </div>
 

@@ -6,12 +6,12 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AdminScenario } from '@/types/admin';
-import AdminNav from '@/components/AdminNav';
+import AdminNav from '@/components/navigation/AdminNav';
 
 export default function AdminScenarios() {
   const { user, loading: authLoading } = useAuth();
   // Mock admin data for now - replace with real data later
-  const [scenarios, setScenarios] = useState<any[]>([]);
+  const [scenarios, setScenarios] = useState<AdminScenario[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   
@@ -20,7 +20,7 @@ export default function AdminScenarios() {
     // Simulate API delay
     setTimeout(() => {
       // Real scenario data from your scenarios page
-      const realScenarios = [
+      const realScenarios: AdminScenario[] = [
         {
           id: '1',
           title: 'Intro to SocialEase',
@@ -32,7 +32,9 @@ export default function AdminScenarios() {
           completionRate: 95,
           averageRating: 4.6,
           totalCompletions: 245,
-          isVR: false
+          isVR: false,
+          createdAt: '2025-08-01T00:00:00.000Z',
+          updatedAt: '2025-08-01T00:00:00.000Z'
         },
         {
           id: '2',
@@ -45,7 +47,9 @@ export default function AdminScenarios() {
           completionRate: 88,
           averageRating: 4.3,
           totalCompletions: 189,
-          isVR: false
+          isVR: false,
+          createdAt: '2025-08-01T00:00:00.000Z',
+          updatedAt: '2025-08-01T00:00:00.000Z'
         },
         {
           id: '3',
@@ -58,7 +62,9 @@ export default function AdminScenarios() {
           completionRate: 82,
           averageRating: 4.1,
           totalCompletions: 167,
-          isVR: false
+          isVR: false,
+          createdAt: '2025-08-01T00:00:00.000Z',
+          updatedAt: '2025-08-01T00:00:00.000Z'
         },
         {
           id: '4',
@@ -71,7 +77,9 @@ export default function AdminScenarios() {
           completionRate: 75,
           averageRating: 3.9,
           totalCompletions: 134,
-          isVR: false
+          isVR: false,
+          createdAt: '2025-08-01T00:00:00.000Z',
+          updatedAt: '2025-08-01T00:00:00.000Z'
         },
         {
           id: '5',
@@ -84,7 +92,9 @@ export default function AdminScenarios() {
           completionRate: 79,
           averageRating: 4.0,
           totalCompletions: 156,
-          isVR: false
+          isVR: false,
+          createdAt: '2025-08-01T00:00:00.000Z',
+          updatedAt: '2025-08-01T00:00:00.000Z'
         },
         {
           id: '6',
@@ -97,7 +107,9 @@ export default function AdminScenarios() {
           completionRate: 68,
           averageRating: 3.7,
           totalCompletions: 98,
-          isVR: true
+          isVR: true,
+          createdAt: '2025-08-01T00:00:00.000Z',
+          updatedAt: '2025-08-01T00:00:00.000Z'
         },
         {
           id: '7',
@@ -110,7 +122,9 @@ export default function AdminScenarios() {
           completionRate: 73,
           averageRating: 4.2,
           totalCompletions: 123,
-          isVR: false
+          isVR: false,
+          createdAt: '2025-08-01T00:00:00.000Z',
+          updatedAt: '2025-08-01T00:00:00.000Z'
         },
         {
           id: '8',
@@ -123,7 +137,9 @@ export default function AdminScenarios() {
           completionRate: 81,
           averageRating: 4.4,
           totalCompletions: 145,
-          isVR: false
+          isVR: false,
+          createdAt: '2025-08-01T00:00:00.000Z',
+          updatedAt: '2025-08-01T00:00:00.000Z'
         },
         {
           id: '9',
@@ -136,7 +152,9 @@ export default function AdminScenarios() {
           completionRate: 66,
           averageRating: 3.8,
           totalCompletions: 89,
-          isVR: true
+          isVR: true,
+          createdAt: '2025-08-01T00:00:00.000Z',
+          updatedAt: '2025-08-01T00:00:00.000Z'
         },
         {
           id: '10',
@@ -149,7 +167,9 @@ export default function AdminScenarios() {
           completionRate: 71,
           averageRating: 3.9,
           totalCompletions: 112,
-          isVR: false
+          isVR: false,
+          createdAt: '2025-08-01T00:00:00.000Z',
+          updatedAt: '2025-08-01T00:00:00.000Z'
         },
         {
           id: '11',
@@ -162,7 +182,9 @@ export default function AdminScenarios() {
           completionRate: 62,
           averageRating: 3.6,
           totalCompletions: 78,
-          isVR: false
+          isVR: false,
+          createdAt: '2025-08-01T00:00:00.000Z',
+          updatedAt: '2025-08-01T00:00:00.000Z'
         },
         {
           id: '12',
@@ -175,7 +197,9 @@ export default function AdminScenarios() {
           completionRate: 58,
           averageRating: 3.5,
           totalCompletions: 67,
-          isVR: false
+          isVR: false,
+          createdAt: '2025-08-01T00:00:00.000Z',
+          updatedAt: '2025-08-01T00:00:00.000Z'
         },
         {
           id: '13',
@@ -188,7 +212,9 @@ export default function AdminScenarios() {
           completionRate: 55,
           averageRating: 3.4,
           totalCompletions: 56,
-          isVR: false
+          isVR: false,
+          createdAt: '2025-08-01T00:00:00.000Z',
+          updatedAt: '2025-08-01T00:00:00.000Z'
         },
         {
           id: '14',
@@ -201,7 +227,9 @@ export default function AdminScenarios() {
           completionRate: 69,
           averageRating: 4.1,
           totalCompletions: 89,
-          isVR: true
+          isVR: true,
+          createdAt: '2025-08-01T00:00:00.000Z',
+          updatedAt: '2025-08-01T00:00:00.000Z'
         },
         {
           id: '15',
@@ -214,7 +242,9 @@ export default function AdminScenarios() {
           completionRate: 52,
           averageRating: 3.3,
           totalCompletions: 45,
-          isVR: true
+          isVR: true,
+          createdAt: '2025-08-01T00:00:00.000Z',
+          updatedAt: '2025-08-01T00:00:00.000Z'
         }
       ];
       
@@ -223,7 +253,7 @@ export default function AdminScenarios() {
     }, 1000);
   }, []);
   
-  const updateScenarioStatus = async (scenarioId: string, status: string) => {
+  const updateScenarioStatus = async (scenarioId: string, status: AdminScenario['status']) => {
     setScenarios(prev => prev.map(s => s.id === scenarioId ? { ...s, status } : s));
   };
   
@@ -529,7 +559,7 @@ export default function AdminScenarios() {
               <select
                 id="vr-filter"
                 value={vrFilter}
-                onChange={(e) => setVrFilter(e.target.value)}
+                onChange={(e) => setVrFilter(e.target.value as "all" | "vr" | "non-vr")}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
                 <option value="all">All Scenarios</option>

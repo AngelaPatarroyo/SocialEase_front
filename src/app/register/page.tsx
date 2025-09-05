@@ -55,7 +55,7 @@ export default function RegisterPage() {
       
       try {
         // Register the user
-        await api.post('/auth/register', {
+        await api.post('/api/auth/register', {
           name: values.name,
           email: values.email,
           password: values.password,
@@ -102,25 +102,25 @@ export default function RegisterPage() {
           <Image src="/images/actualogo.png" alt="SocialEase Logo" width={140} height={140} priority />
         </div>
 
-        {/* Mascot + Bubble */}
+        {/* Shy Blob + Bubble */}
         <div className="relative flex justify-center mb-8">
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="absolute -top-4 sm:-top-6 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 text-sm sm:text-base font-medium px-4 py-3 rounded-xl shadow-lg max-w-[240px]"
-          >
-            Hi! 👋 <br /> Let's create your account.
-            <div className="absolute left-1/2 transform -translate-x-1/2 top-full w-4 h-4 bg-white dark:bg-gray-700 border-l border-b border-gray-200 dark:border-gray-600 rotate-45"></div>
-          </motion.div>
-          <motion.div
-            initial={{ y: -8 }}
-            animate={{ y: 0 }}
-            transition={{ duration: 1.2, ease: 'easeOut' }}
-            className="relative w-28 h-28 md:w-36 md:h-36 mt-6"
-          >
-            <Image src="/images/shy-blob.png" alt="Shy Blob" width={180} height={180} className="drop-shadow-xl" />
-          </motion.div>
+                                  <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.8 }}
+                          className="absolute -top-4 sm:-top-6 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 text-sm sm:text-base font-medium px-4 py-3 rounded-xl shadow-lg max-w-[240px]"
+                        >
+                          Welcome! 😊 <br /> Let's create your account.
+                          <div className="absolute left-1/2 transform -translate-x-1/2 top-full w-4 h-4 bg-white dark:bg-gray-700 border-l border-b border-gray-200 dark:border-gray-600 rotate-45"></div>
+                        </motion.div>
+                                  <motion.div
+                          initial={{ y: -8 }}
+                          animate={{ y: 0 }}
+                          transition={{ duration: 1.2, ease: 'easeOut' }}
+                          className="relative w-28 h-28 md:w-36 md:h-36 mt-6"
+                        >
+                          <Image src="/images/shy-blob.png" alt="Shy Blob" width={180} height={180} className="drop-shadow-xl" />
+                        </motion.div>
         </div>
 
         <p className="text-gray-500 dark:text-gray-400 text-base mb-6">

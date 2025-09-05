@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import ScenarioCard, { ScenarioCardProps } from '@/components/ScenarioCard';
+import ScenarioCard, { ScenarioCardProps } from '@/components/scenarios/ScenarioCard';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -119,22 +119,9 @@ const scenarios: ScenarioCardProps[] = [
 
 export default function ScenariosPage() {
   return (
-    <main className="min-h-screen px-4 py-10 bg-gradient-to-br from-blue-50 via-indigo-50 to-white dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-colors">
-      <motion.h1
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 1 }}
-        className="text-4xl md:text-5xl font-bold text-center text-indigo-800 dark:text-indigo-200 mb-4"
-      >
-        Social Scenarios
-      </motion.h1>
-
-      <p className="text-center text-gray-600 dark:text-gray-300 text-md mb-6">
-        Practice real-life social situations and gain XP as you grow!
-      </p>
-
-      {/* Quick Navigation */}
-      <div className="max-w-4xl mx-auto mb-10">
+    <main className="min-h-screen px-4 pt-8 pb-10 bg-gradient-to-br from-blue-50 via-indigo-50 to-white dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-colors">
+      {/* Top Navigation Bar */}
+      <div className="w-full max-w-4xl mx-auto mb-8">
         <div className="bg-white dark:bg-gray-700 p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-600">
           <div className="flex flex-wrap justify-center gap-4">
             <Link 
@@ -183,9 +170,24 @@ export default function ScenariosPage() {
               </svg>
               Profile
             </Link>
+            
+
           </div>
         </div>
       </div>
+
+      <motion.h1
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 1 }}
+        className="text-4xl md:text-5xl font-bold text-center text-indigo-800 dark:text-indigo-200 mb-4"
+      >
+        Social Scenarios
+      </motion.h1>
+
+      <p className="text-center text-gray-600 dark:text-gray-300 text-md mb-6">
+        Practice real-life social situations and gain XP as you grow!
+      </p>
 
       <div className="flex flex-col items-center mb-10">
         <motion.div

@@ -24,7 +24,7 @@ export default function GreetStrangerScenario() {
     'Hi there! Ready to try something new?',
     "You're about to walk into a room and see someone you don't know.",
     'Imagine greeting them with a confident smile. Just practice no pressure.',
-    '🎧 Tip: Use headphones for the best experience!',
+    'Tip: Use headphones for the best experience!',
   ];
 
   const handleNext = () => {
@@ -136,9 +136,9 @@ export default function GreetStrangerScenario() {
         />
       </div>
 
-      {showModal && scenario && (
-        <Step1Modal onStart={handleModalStart} scenarioId={scenario._id} />
-      )}
+              {showModal && scenario && (
+          <Step1Modal onStart={handleModalStart} />
+        )}
 
       {/* Header with enhanced styling */}
       <motion.div
@@ -161,7 +161,7 @@ export default function GreetStrangerScenario() {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full border border-indigo-200 shadow-sm"
           >
-            <span className="text-sm font-medium text-indigo-700">🎯 Beginner Level</span>
+                            <span className="text-sm font-medium text-indigo-700">Beginner Level</span>
           </motion.div>
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
@@ -248,7 +248,7 @@ export default function GreetStrangerScenario() {
               </div>
             </motion.div>
 
-            {/* Enhanced mascot with animations */}
+            {/* Enhanced wizard blob with animations */}
             <motion.div
               initial={{ opacity: 0, scale: 0.5 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -261,26 +261,26 @@ export default function GreetStrangerScenario() {
                 className="relative"
               >
                 <Image
-                  src="/images/mascot.png"
-                  alt="Supportive Blob Character"
+                  src="/images/wizard-blob.png"
+                  alt="Wizard Blob Character"
                   width={140}
                   height={140}
                   className="drop-shadow-lg"
                 />
-                {/* Floating sparkles around mascot */}
+                {/* Floating sparkles around wizard blob */}
                 <motion.div
                   animate={{ rotate: 360 }}
                   transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
                   className="absolute -top-2 -right-2 text-2xl"
                 >
-                  ✨
+  
                 </motion.div>
                 <motion.div
                   animate={{ rotate: -360 }}
                   transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
                   className="absolute -bottom-2 -left-2 text-xl"
                 >
-                  🌟
+  
                 </motion.div>
               </motion.div>
             </motion.div>

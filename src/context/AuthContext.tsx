@@ -64,7 +64,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchProfile = useCallback(async (jwt: string) => {
     try {
-      const res = await api.get('/user/profile', {
+      const res = await api.get('/api/user/profile', {
         headers: { Authorization: `Bearer ${jwt}` },
       });
 
@@ -115,7 +115,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [fetchProfile]);
 
   const login = async (email: string, password: string) => {
-    const res = await api.post('/auth/login', { email, password });
+    const res = await api.post('/api/auth/login', { email, password });
     const { token, user } = res.data;
     setToken(token);
     setUser(user);
@@ -125,7 +125,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const register = async (name: string, email: string, password: string) => {
-    await api.post('/auth/register', { name, email, password });
+    await api.post('/api/auth/register', { name, email, password });
   };
 
   const updateUser = (updates: Partial<LocalUser>) => {

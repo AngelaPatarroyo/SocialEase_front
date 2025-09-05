@@ -7,28 +7,24 @@ import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { UserFeedback } from '@/types/admin';
-import AdminNav from '@/components/AdminNav';
-import { showNotification } from '@/components/Notification';
+import AdminNav from '@/components/navigation/AdminNav';
+import { showNotification } from '@/components/common/Notification';
 
 export default function AdminFeedback() {
   const { user, token, loading: authLoading } = useAuth();
-  // Scenario completion feedback data
-  const [feedback, setFeedback] = useState<Array<{
-    _id: string;
-    scenarioId: string;
-    scenarioName?: string;
-    userId: string;
-    userName?: string;
-    rating: number;
-    reflection: string;
-    createdAt: string;
-    updatedAt: string;
+  
+  // Extended feedback interface for admin use
+  interface ExtendedUserFeedback extends UserFeedback {
     status?: 'open' | 'in-progress' | 'resolved' | 'closed';
-    priority?: 'low' | 'medium' | 'high' | 'critical';
     assignedTo?: string | null;
-  }>>([]);
+    scenarioName?: string;
+    userName?: string;
+  }
+  
+  // Scenario completion feedback data
+  const [feedback, setFeedback] = useState<ExtendedUserFeedback[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   
   const fetchFeedback = useCallback(async () => {
     setLoading(true);
@@ -107,7 +103,7 @@ export default function AdminFeedback() {
     // Find the feedback item to get the scenario name
     const feedbackItem = feedback.find(item => item._id === feedbackId);
     if (feedbackItem) {
-      setDeleteConfirmation({ id: feedbackId, name: feedbackItem.scenarioName });
+      setDeleteConfirmation({ id: feedbackId, name: feedbackItem.scenarioName || 'Unknown Scenario' });
     }
   };
   
@@ -324,7 +320,7 @@ export default function AdminFeedback() {
                       
                       {/* Priority Badge */}
                       <div className="flex flex-col items-end space-y-2">
-                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getPriorityColor(item.priority)}`}>
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getPriorityColor(item.priority || 'medium')}`}>
                           {item.priority} Priority
                         </span>
                         

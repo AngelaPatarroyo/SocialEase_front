@@ -2,6 +2,7 @@ import './globals.css';
 import Script from 'next/script';
 import { AuthProvider } from '@/context/AuthContext';
 import { ThemeProvider } from '@/context/ThemeContext';
+import { AdminProvider } from '@/context/AdminContext';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -17,7 +18,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Only use your custom AuthProvider */}
         <div id="app-root">
           <ThemeProvider>
-            <AuthProvider>{children}</AuthProvider>
+            <AuthProvider>
+              <AdminProvider>
+                {children}
+              </AdminProvider>
+            </AuthProvider>
           </ThemeProvider>
         </div>
       </body>

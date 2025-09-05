@@ -5,15 +5,21 @@ import { useAuth } from '@/context/AuthContext';
 
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import AdminNav from '@/components/AdminNav';
+import AdminNav from '@/components/navigation/AdminNav';
+import { AdminStats } from '@/types/admin';
 
 export default function AdminDashboard() {
   const { user, loading: authLoading } = useAuth();
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<AdminStats>({
     totalUsers: 0,
+    activeUsers: 0,
+    suspendedUsers: 0,
+    totalScenarios: 0,
     activeScenarios: 0,
+    totalFeedback: 0,
     openFeedback: 0,
-    systemHealth: 'healthy' as const
+    systemHealth: 'healthy',
+    lastBackup: new Date().toISOString()
   });
   const [statsLoading, setStatsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -66,9 +72,14 @@ export default function AdminDashboard() {
 
       setStats({
         totalUsers,
+        activeUsers: totalUsers, // For now, assume all users are active
+        suspendedUsers: 0,
+        totalScenarios: activeScenarios,
         activeScenarios,
+        totalFeedback: openFeedback,
         openFeedback,
-        systemHealth: 'healthy' as const
+        systemHealth: 'healthy',
+        lastBackup: new Date().toISOString()
       });
       setError(null);
     } catch (error) {

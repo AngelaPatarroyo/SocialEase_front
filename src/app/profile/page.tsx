@@ -7,7 +7,7 @@ import api from '@/utils/api';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { UploadCloud, Eye, EyeOff, Shield, Key, Info } from 'lucide-react';
-import { showNotification } from '@/components/Notification';
+import { showNotification } from '@/components/common/Notification';
 import Link from 'next/link';
 
 interface PasswordStatus {
@@ -69,10 +69,10 @@ export default function ProfilePage() {
 
   const fetchPasswordStatus = async () => {
     try {
-      const response = await api.get('/user/password/status', {
+      const response = await api.get('/api/user/password/status', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log('[Profile] Backend password status:', response.data);
+
       setPasswordStatus(response.data);
     } catch (error) {
       console.error('Failed to fetch password status:', error);
@@ -80,12 +80,7 @@ export default function ProfilePage() {
       const isGoogleUser = user?.provider === 'google';
       const hasExistingPassword = !!user?.password;
       
-      console.log('[Profile] Fallback password status:', {
-        isGoogleUser,
-        hasExistingPassword,
-        userProvider: user?.provider,
-        userPassword: user?.password
-      });
+
       
       setPasswordStatus({
         hasPassword: hasExistingPassword,
@@ -117,7 +112,7 @@ export default function ProfilePage() {
       let avatarUrl = avatar;
 
       if (customAvatar) {
-        const { data: sig } = await api.get('/cloudinary/signature');
+        const { data: sig } = await api.get('/api/cloudinary/signature');
         const formData = new FormData();
         formData.append('file', customAvatar);
         formData.append('api_key', sig.api_key);
@@ -137,7 +132,7 @@ export default function ProfilePage() {
         setAvatar(avatarUrl);
       }
 
-      await api.put('/user/profile', { name, avatar: avatarUrl, theme: localTheme }, {
+      await api.put('/api/user/profile', { name, avatar: avatarUrl, theme: localTheme }, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -171,14 +166,9 @@ export default function ProfilePage() {
         ? { currentPassword, newPassword } 
         : { newPassword };
 
-      console.log('[Profile] Password update payload:', {
-        payload,
-        requiresCurrentPassword: passwordStatus?.requiresCurrentPassword,
-        hasPassword: passwordStatus?.hasPassword,
-        isGoogleUser: user?.provider === 'google'
-      });
 
-      const res = await api.put('/user/password', payload, {
+
+      const res = await api.put('/api/user/password', payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -212,7 +202,7 @@ export default function ProfilePage() {
 
   const confirmDeleteAccount = async () => {
     try {
-      await api.delete('/user/delete', {
+              await api.delete('/api/user/delete', {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -462,12 +452,7 @@ export default function ProfilePage() {
               </div>
             )}
 
-            {/* Debug info */}
-            <div className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 p-2 rounded">
-              Debug: requiresCurrentPassword = {String(passwordStatus?.requiresCurrentPassword)}, 
-              hasPassword = {String(passwordStatus?.hasPassword)}, 
-              provider = {user?.provider}
-            </div>
+
 
             <div className="relative">
               <input
@@ -544,30 +529,30 @@ export default function ProfilePage() {
 
       {/* Delete Account Confirmation Modal */}
       {showDeleteConfirmation && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 p-2 sm:p-4">
+          <div className="relative top-10 sm:top-20 mx-auto p-3 sm:p-5 border w-full max-w-sm shadow-lg rounded-md bg-white dark:bg-gray-800">
             <div className="mt-3 text-center">
               <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/40">
                 <svg className="h-6 w-6 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mt-4">Delete Account</h3>
-              <div className="mt-2 px-7">
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+              <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-gray-100 mt-3 sm:mt-4">Delete Account</h3>
+              <div className="mt-2 px-3 sm:px-7">
+                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                   Are you sure you want to permanently delete your account? This action cannot be undone.
                 </p>
               </div>
-              <div className="flex justify-center space-x-3 mt-6">
+              <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-3 mt-4 sm:mt-6">
                 <button
                   onClick={cancelDeleteAccount}
-                  className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                  className="px-3 sm:px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-sm sm:text-base"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={confirmDeleteAccount}
-                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                  className="px-3 sm:px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm sm:text-base"
                 >
                   Delete Account
                 </button>
