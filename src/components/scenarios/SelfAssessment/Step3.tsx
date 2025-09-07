@@ -2,10 +2,11 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { showNotification } from '@/components/common/Notification';
 
-export default function Step3({ onSubmit }: { onSubmit: (data: any) => void }) {
+export default function Step3({ onSubmit, initialConfidence = 5 }: { onSubmit: (data: any) => void; initialConfidence?: number }) {
   const [data, setData] = useState({
-    confidenceAfter: 5,
+    confidenceAfter: initialConfidence,
     primaryGoal: '',
     comfortZones: [] as string[],
     preferredScenarios: [] as string[],
@@ -43,7 +44,7 @@ export default function Step3({ onSubmit }: { onSubmit: (data: any) => void }) {
         setSubmitting(false);
       }
     } else {
-      alert('Please complete all fields before submitting.');
+      showNotification('warning', 'Incomplete Form', 'Please complete all fields before submitting.');
     }
   };
 
@@ -102,7 +103,7 @@ export default function Step3({ onSubmit }: { onSubmit: (data: any) => void }) {
         {/* Confidence After Assessment */}
         <div className="space-y-2">
           <label className="block font-medium text-sm text-gray-800 dark:text-gray-200">
-            Confidence now?
+            Confidence now? (You started at {initialConfidence})
           </label>
           
           <div className="text-center space-y-2">

@@ -25,13 +25,16 @@ jest.mock('next/navigation', () => ({
 }))
 
 // Mock Next.js Image component
-jest.mock('next/image', () => ({
-  __esModule: true,
-  default: (props) => {
-    // eslint-disable-next-line @next/next/no-img-element
-    return require('react').createElement('img', props)
-  },
-}))
+jest.mock('next/image', () => {
+  const React = require('react')
+  return {
+    __esModule: true,
+    default: React.forwardRef((props, ref) => {
+      const { priority, ...restProps } = props
+      return React.createElement('img', { ...restProps, ref })
+    }),
+  }
+})
 
 // Mock localStorage
 const localStorageMock = {

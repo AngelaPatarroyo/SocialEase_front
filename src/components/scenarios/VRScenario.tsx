@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Text, Box, Cylinder, Sphere, Plane } from '@react-three/drei';
 import { motion } from 'framer-motion';
@@ -176,7 +176,7 @@ function VREnvironment() {
   const { camera } = useThree();
   
   // Set initial camera position
-  React.useEffect(() => {
+  useEffect(() => {
     camera.position.set(0, 2, 8);
     camera.lookAt(0, 0, 0);
   }, [camera]);

@@ -56,18 +56,52 @@ export default function Step3Feedback() {
         return;
       }
   
-      // For now, we'll just simulate the completion
-      // In the future, these can be connected to actual backend endpoints
-      console.log('[submit] Scenario completed locally:', { 
-        scenarioId: scenarioParam, 
+      // Prepare feedback data according to UML diagram flow
+      const feedbackData = {
+        scenarioId: scenarioParam,
+        scenarioSlug: scenarioParam,
         rating: numRating,
-        reflection: reflection.trim()
-      });
+        reflection: reflection.trim(),
+        emotions: reflection.trim(), // Map reflection to emotions for UML compliance
+        thoughts: reflection.trim(), // Map reflection to thoughts for UML compliance
+        timestamp: new Date().toISOString(),
+        xpEarned: scenarioXP
+      };
+
+      console.log('[submit] Submitting reflection feedback:', feedbackData);
+
+      // Step 1.1: POST /api/feedback() - as shown in UML diagram
+      try {
+        const response = await api.post('/api/feedback', feedbackData, {
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+
+        // Handle successful feedback submission
+        if (response.data) {
+          const { newXP, totalXP, level } = response.data;
+          
+          // Show success notification with XP and level info
+          showNotification(
+            'success', 
+            'Reflection Saved!', 
+            `Great job! You earned ${scenarioXP} XP. Total: ${totalXP} XP (Level ${level})`
+          );
+        } else {
+          // Fallback to local success if no backend response
+          showNotification('success', 'Scenario Complete!', `Great job! You earned ${scenarioXP} XP for completing this scenario.`);
+        }
+      } catch (apiError: any) {
+        console.warn('[submit] API call failed, using local completion:', apiError);
+        
+        // Fallback: Local completion if API fails
+        showNotification('success', 'Scenario Complete!', `Great job! You earned ${scenarioXP} XP for completing this scenario.`);
+      }
   
-      // Show success notification with XP earned
-      showNotification('success', 'Scenario Complete!', `Great job! You earned ${scenarioXP} XP for completing this scenario.`);
-  
-      router.push('/dashboard?toast=feedback_saved');
+      // Redirect to dashboard with success state
+      router.push('/dashboard?toast=feedback_saved&xp=' + scenarioXP);
     } catch (err: any) {
       const url = err?.response?.config?.url;
       const status = err?.response?.status;
@@ -78,6 +112,8 @@ export default function Step3Feedback() {
         data?.errors?.[0]?.msg ||
         'Something went wrong.';
       setError(msg);
+    } finally {
+      setSubmitting(false);
     }
   };
   

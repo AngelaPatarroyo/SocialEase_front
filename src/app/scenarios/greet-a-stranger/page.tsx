@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import { AnimatePresence, motion } from 'framer-motion';
 import Step1Modal from './step1/Modal';
 import api from '@/utils/api';
@@ -260,7 +259,7 @@ export default function GreetStrangerScenario() {
                 transition={{ duration: 2, repeat: Infinity }}
                 className="relative"
               >
-                <Image
+                <img
                   src="/images/wizard-blob.png"
                   alt="Wizard Blob Character"
                   width={140}
@@ -347,13 +346,12 @@ export default function GreetStrangerScenario() {
                 whileHover={{ scale: 1.02 }}
                 className="relative"
               >
-                <Image
+                <img
                   src="/images/scenarios/stranger.png"
                   alt="Greet a Stranger"
                   width={360}
                   height={360}
                   className="rounded-2xl shadow-2xl border-4 border-white/50"
-                  priority
                 />
                 {/* Overlay with scenario info */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300">

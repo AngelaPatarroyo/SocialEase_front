@@ -14,6 +14,8 @@ export default function AddGoalModal({ onClose, onSuccess }: Props) {
   const [target, setTarget] = useState<number>(1);
   const [deadline, setDeadline] = useState<string>('');         // yyyy-mm-dd
   const [reminder, setReminder] = useState<string>('');         // yyyy-mm-ddThh:mm
+  const [reminderDate, setReminderDate] = useState<string>(''); // yyyy-mm-dd
+  const [reminderTime, setReminderTime] = useState<string>('09:00'); // hh:mm
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,6 +29,22 @@ export default function AddGoalModal({ onClose, onSuccess }: Props) {
     if (!d) return undefined;
     const dt = new Date(d);
     return isNaN(dt.getTime()) ? undefined : dt.toISOString();
+  };
+
+  const setDefaultTime = (dateValue: string) => {
+    if (dateValue) {
+      setReminderDate(dateValue);
+      // Combine date and time for the reminder
+      const combinedDateTime = `${dateValue}T${reminderTime}`;
+      setReminder(combinedDateTime);
+    }
+  };
+
+  const updateReminder = (date: string, time: string) => {
+    if (date && time) {
+      const combined = `${date}T${time}`;
+      setReminder(combined);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -121,18 +139,41 @@ export default function AddGoalModal({ onClose, onSuccess }: Props) {
               <input
                 type="date"
                 value={deadline}
-                onChange={(e) => setDeadline(e.target.value)}
+                onChange={(e) => {
+                  setDeadline(e.target.value);
+                  setDefaultTime(e.target.value);
+                }}
                 className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 p-2 outline-none text-gray-700 dark:text-gray-200 transition-colors"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Reminder</label>
-              <input
-                type="datetime-local"
-                value={reminder}
-                onChange={(e) => setReminder(e.target.value)}
-                className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 p-2 outline-none text-gray-700 dark:text-gray-200 transition-colors"
-              />
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Reminder (date & time)</label>
+              <div className="grid grid-cols-2 gap-2 mt-1">
+                <input
+                  type="date"
+                  value={reminderDate}
+                  onChange={(e) => {
+                    setReminderDate(e.target.value);
+                    updateReminder(e.target.value, reminderTime);
+                  }}
+                  className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 p-2 outline-none text-gray-700 dark:text-gray-200 transition-colors"
+                  min={new Date().toISOString().slice(0, 10)}
+                />
+                <input
+                  type="time"
+                  value={reminderTime}
+                  onChange={(e) => {
+                    setReminderTime(e.target.value);
+                    updateReminder(reminderDate, e.target.value);
+                  }}
+                  className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 p-2 outline-none text-gray-700 dark:text-gray-200 transition-colors"
+                />
+              </div>
+              {!reminderDate && (
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Select a date and time for your reminder
+                </p>
+              )}
             </div>
           </div>
 

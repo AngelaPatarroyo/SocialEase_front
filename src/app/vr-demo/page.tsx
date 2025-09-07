@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import Image from 'next/image';
 import Link from 'next/link';
 import VRScenario from '@/components/scenarios/VRScenario';
 import { showNotification } from '@/components/common/Notification';
@@ -84,7 +83,7 @@ export default function VRDemoPage() {
             transition={{ duration: 0.6 }}
             className="mb-6"
           >
-            <Image
+            <img
               src="/images/wizard-blob.png"
               alt="Wizard Blob"
               width={120}
@@ -181,7 +180,7 @@ export default function VRDemoPage() {
 
                     <button
                       onClick={handleStartVR}
-                      className="w-full md:w-auto px-8 py-4 bg-purple-600 text-white rounded-xl font-semibold text-lg hover:bg-purple-700 transition-colors shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-transform"
+                      className="w-full md:w-auto px-8 py-4 bg-purple-600 text-white rounded-xl font-semibold text-lg hover:bg-purple-700 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all"
                     >
                       <div className="flex items-center justify-center gap-3">
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

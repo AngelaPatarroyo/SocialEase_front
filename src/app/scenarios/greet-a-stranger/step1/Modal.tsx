@@ -29,7 +29,7 @@ export default function Step1Modal({ onStart }: Step1ModalProps) {
     setTimeout(() => {
       onStart({ mood, intention });
       setLoading(false);
-    }, 500);
+    }, 300);
   };
 
   return (

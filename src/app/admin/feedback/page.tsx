@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { motion } from 'framer-motion';
 
@@ -60,20 +60,34 @@ export default function AdminFeedback() {
       const feedbackData = await response.json();
       console.log('📊 Received real feedback data:', feedbackData);
       
-      // Check if feedbackData is an array
-      if (!Array.isArray(feedbackData)) {
-        console.error('❌ Backend did not return an array:', feedbackData);
-        if (feedbackData.error) {
-          throw new Error(`Backend error: ${feedbackData.error}`);
-        } else {
-          throw new Error('Backend returned invalid data format');
-        }
+      // Handle different response formats from backend
+      let actualFeedbackData = feedbackData;
+      
+      // If backend returns { success: true, data: [...] } format
+      if (feedbackData && typeof feedbackData === 'object' && feedbackData.success && feedbackData.data) {
+        actualFeedbackData = feedbackData.data;
       }
+      // If backend returns { success: false, error: "..." } format
+      else if (feedbackData && typeof feedbackData === 'object' && feedbackData.success === false) {
+        throw new Error(`Backend error: ${feedbackData.error || 'Unknown error'}`);
+      }
+      // If backend returns empty object or null, treat as empty array
+      else if (!feedbackData || (typeof feedbackData === 'object' && Object.keys(feedbackData).length === 0)) {
+        actualFeedbackData = [];
+      }
+      
+      // Ensure we have an array
+      if (!Array.isArray(actualFeedbackData)) {
+        console.error('❌ Backend did not return an array:', actualFeedbackData);
+        throw new Error('Backend returned invalid data format - expected array');
+      }
+      
+      console.log('📊 Processed feedback data (array):', actualFeedbackData);
       
 
       
       // Transform the data to include scenario names and user names
-      const transformedFeedback = feedbackData.map((item: any) => ({
+      const transformedFeedback = actualFeedbackData.map((item: any) => ({
         ...item,
         scenarioName: String(item.scenarioId?.title || item.scenarioId?.name || item.scenarioName || 'Unknown Scenario'),
         userName: String(item.userId?.name || item.userId?.firstName || item.userName || `User ${item.userId}`),

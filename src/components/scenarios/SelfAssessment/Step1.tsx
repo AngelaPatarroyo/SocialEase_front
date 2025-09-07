@@ -171,7 +171,7 @@ export default function Step1({ onNext }: { onNext: (profileData: any) => void }
               whileTap={{ scale: 0.99 }}
             >
               <div className="flex items-center justify-between">
-                <span className="font-medium text-sm">{option}</span>
+                <span className="font-medium text-sm text-gray-800 dark:text-white">{option}</span>
                 {selectedOption === option && (
                   <motion.div
                     initial={{ scale: 0 }}

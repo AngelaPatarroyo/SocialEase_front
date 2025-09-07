@@ -1,7 +1,6 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import Image from 'next/image';
 import Link from 'next/link';
 import Navbar from '@/components/navigation/Navbar';
 
@@ -340,7 +339,7 @@ export default function HomePage() {
                   whileHover={{ scale: 1.15, rotate: 5 }}
                 >
                   <div className={`absolute inset-0 bg-gradient-to-r ${blob.color} rounded-full blur-xl opacity-20 group-hover:opacity-40 transition-opacity duration-300`}></div>
-                  <Image
+                  <img
                     src={blob.img}
                     alt={blob.name}
                     width={120}

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 
 import { useRouter } from 'next/navigation';
@@ -42,18 +42,10 @@ export default function AdminUsers() {
       }
       
       // Debug token storage
-      console.log('🔍 Stored token:', localStorage.getItem('token'));
-      console.log('🔍 Admin token:', localStorage.getItem('adminToken'));
-      console.log('🔍 Token being sent:', `Bearer ${token}`);
-      console.log('🔍 Fetching users with token:', token ? token.substring(0, 20) + '...' : 'NO TOKEN');
-      console.log('🔍 User role:', user.role);
       
       // Decode and log token contents
       if (token) {
         const tokenData = decodeToken(token);
-        console.log('🔍 Token contents:', tokenData);
-        console.log('🔍 Token role:', tokenData?.role);
-        console.log('🔍 Token user ID:', tokenData?.userId || tokenData?.id);
       }
       
       // Use the existing user's session token
@@ -124,10 +116,6 @@ export default function AdminUsers() {
       setError(null); // Clear any previous errors
       
       // Debug token for delete operation
-      console.log('🗑️ Delete operation - Stored token:', localStorage.getItem('token'));
-      console.log('🗑️ Delete operation - Admin token:', localStorage.getItem('adminToken'));
-      console.log('🗑️ Delete operation - Token being sent:', `Bearer ${token}`);
-      console.log('🗑️ Delete operation - User ID:', userId);
       
       const response = await fetch(`/api/admin/users/${userId}`, {
         method: 'DELETE',
@@ -236,7 +224,6 @@ export default function AdminUsers() {
     try {
       setError(null); // Clear any previous errors
       
-      console.log('Creating user:', userData);
       
       const response = await fetch('/api/admin/users', {
         method: 'POST',

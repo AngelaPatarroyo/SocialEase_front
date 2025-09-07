@@ -74,7 +74,7 @@ export default function GoalsPage() {
 
         {/* Main Content */}
         <div className="bg-white dark:bg-gray-700 p-8 rounded-xl shadow-md border border-gray-200 dark:border-gray-600 text-center">
-          <div className="text-6xl mb-4">🎯</div>
+          <div className="text-6xl mb-4">⚡</div>
           <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4">
             Goals Management Coming Soon
           </h2>

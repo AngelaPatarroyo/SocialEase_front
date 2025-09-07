@@ -1,7 +1,8 @@
 import axios from 'axios';
+import { getValidToken } from './jwt';
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000',
+  baseURL: process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:4000',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -11,9 +12,10 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('token');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+      // Get and validate token before adding to request
+      const validToken = getValidToken();
+      if (validToken) {
+        config.headers.Authorization = `Bearer ${validToken}`;
       }
     }
     return config;

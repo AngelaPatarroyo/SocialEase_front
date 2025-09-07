@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useFormik } from 'formik';
@@ -99,7 +98,7 @@ export default function RegisterPage() {
 
         {/* Logo */}
         <div className="flex justify-center mb-10">
-          <Image src="/images/actualogo.png" alt="SocialEase Logo" width={140} height={140} priority />
+          <img src="/images/actualogo.png" alt="SocialEase Logo" width={140} height={140} className="h-auto" />
         </div>
 
         {/* Shy Blob + Bubble */}
@@ -119,7 +118,7 @@ export default function RegisterPage() {
                           transition={{ duration: 1.2, ease: 'easeOut' }}
                           className="relative w-28 h-28 md:w-36 md:h-36 mt-6"
                         >
-                          <Image src="/images/shy-blob.png" alt="Shy Blob" width={180} height={180} className="drop-shadow-xl" />
+                          <img src="/images/shy-blob.png" alt="Shy Blob" width={180} height={180} className="drop-shadow-xl" />
                         </motion.div>
         </div>
 
@@ -240,7 +239,7 @@ export default function RegisterPage() {
           onClick={handleGoogleSignUp}
           className="w-full flex items-center justify-center gap-3 border border-gray-300 dark:border-gray-600 rounded-lg py-3 font-semibold text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
         >
-          <Image src="/images/google-icon.png" alt="Google" width={20} height={20} />
+          <img src="/images/google-icon.png" alt="Google" width={20} height={20} />
           Sign up with Google
         </button>
 

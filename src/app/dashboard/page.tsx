@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import api from '@/utils/api';
-import Image from 'next/image';
 import AddGoalModal from '@/components/forms/AddGoalModal';
 import SelfAssessmentModal from '@/components/scenarios/SelfAssessment/SelfAssessmentModal';
 import {
@@ -213,7 +212,9 @@ export default function DashboardPage() {
   } = dashboard;
 
   const displayName = user.name || 'User';
-  const avatarSrc = user.avatar?.startsWith?.('http') ? user.avatar : '/images/default-avatar.png';
+  const avatarSrc = user.avatar?.startsWith?.('data:') || user.avatar?.startsWith?.('http') 
+    ? user.avatar 
+    : `/images/${user.avatar || 'default-avatar.png'}`;
 
   // Use only backend XP data - no more localStorage fallback
   const xp = Math.max(0, Number(stats.xp || 0));
@@ -343,7 +344,7 @@ export default function DashboardPage() {
                 return (
                   <div key={badgeKey} className="flex flex-col items-center bg-white/20 rounded-lg p-2">
                     {badge?.image ? (
-                      <Image 
+                      <img 
                         src={badge.image} 
                         alt={badge.name} 
                         width={40} 
@@ -435,7 +436,7 @@ export default function DashboardPage() {
           className="flex items-center justify-center gap-12 mb-6"
         >
           {/* Wizard Blob - Left */}
-          <Image 
+          <img 
             src="/images/wizard-blob.png" 
             alt="Wizard Blob" 
             width={140} 
@@ -449,7 +450,7 @@ export default function DashboardPage() {
             title="Update your profile"
             className="rounded-full border-4 border-indigo-500 shadow-md hover:scale-105 transition-transform"
           >
-            <Image src={avatarSrc} alt="User Avatar" width={80} height={80} className="rounded-full" />
+            <img src={avatarSrc} alt="User Avatar" width={80} height={80} className="rounded-full" />
           </button>
         </motion.div>
         
@@ -583,7 +584,7 @@ export default function DashboardPage() {
                 key={badge.key}
                 className="flex flex-col items-center bg-white dark:bg-gray-800 p-3 rounded-lg shadow border border-gray-200 dark:border-gray-700"
               >
-                <Image src={badge.image} alt={badge.name} width={60} height={60} className="rounded-full" />
+                <img src={badge.image} alt={badge.name} width={60} height={60} className="rounded-full" />
                 <span className="mt-2 text-sm font-medium text-gray-700 dark:text-gray-300">{badge.name}</span>
               </div>
             ))}
@@ -605,12 +606,10 @@ export default function DashboardPage() {
                   aria-label={`Open scenario: ${s.title}`}
                 >
                   <div className="relative w-full aspect-[4/3] bg-white dark:bg-gray-800">
-                    <Image
+                    <img
                       src={s.imageUrl}
                       alt={s.title}
-                      fill
-                      className="object-contain p-1"
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      className="w-full h-full object-contain p-1"
                     />
                   </div>
                   <div className="p-4">
@@ -745,76 +744,6 @@ export default function DashboardPage() {
         )}
       </Section>
 
-      <Section title="Recent Scenarios" titleClass="text-green-600 dark:text-green-300">
-        {(progress?.recentScenarios || []).length > 0 ? (
-          <div className="space-y-3">
-            {(progress.recentScenarios || []).map((scenario: any, index: number) => {
-              // Handle both string and object formats from backend
-              const scenarioData = typeof scenario === 'string' ? { name: scenario } : scenario;
-              const scenarioName = scenarioData.name || scenarioData.title || scenarioData.scenarioName || 'Unknown Scenario';
-              const completionDate = scenarioData.completedAt ? new Date(scenarioData.completedAt).toLocaleDateString() : null;
-              const xpEarned = scenarioData.xpEarned || scenarioData.xp || 0;
-              const rating = scenarioData.rating || scenarioData.userRating;
-              
-              return (
-                <div key={index} className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-800 dark:text-gray-200 text-lg">
-                        {scenarioName}
-                      </h4>
-                      <div className="flex items-center gap-4 mt-2 text-sm text-gray-600 dark:text-gray-400">
-                        {completionDate && (
-                          <span className="flex items-center gap-1">
-                            <span className="text-green-500">✓</span>
-                            Completed {completionDate}
-                          </span>
-                        )}
-                        {xpEarned > 0 && (
-                          <span className="flex items-center gap-1">
-                            <span className="text-yellow-500">⭐</span>
-                            +{xpEarned} XP
-                          </span>
-                        )}
-                        {rating && (
-                          <span className="flex items-center gap-1">
-                            <span className="text-blue-500">💭</span>
-                            Rating: {rating}/5
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {scenarioData.slug && (
-                        <Link
-                          href={`/scenarios/${scenarioData.slug}`}
-                          className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200 text-sm font-medium"
-                        >
-                          Replay →
-                        </Link>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <div className="text-gray-400 dark:text-gray-500 text-6xl mb-4">🎯</div>
-            <p className="text-gray-500 dark:text-gray-400 text-lg mb-2">No scenarios completed yet</p>
-            <p className="text-gray-400 dark:text-gray-300 text-sm">
-              Start with your first scenario to see your progress here!
-            </p>
-            <Link
-              href="/scenarios"
-              className="inline-block mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-6 rounded-lg transition-colors"
-            >
-              Browse Scenarios
-            </Link>
-          </div>
-        )}
-      </Section>
 
       {messages.length > 0 && (
         <div className="bg-indigo-50 dark:bg-indigo-900 border-l-4 border-indigo-500 text-indigo-700 dark:text-indigo-200 p-4 rounded">

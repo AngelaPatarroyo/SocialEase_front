@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import api from '@/utils/api';
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { UploadCloud, Eye, EyeOff, Shield, Key, Info } from 'lucide-react';
 import { showNotification } from '@/components/common/Notification';
@@ -73,21 +72,31 @@ export default function ProfilePage() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      setPasswordStatus(response.data);
+      console.log('🔐 Password status API response:', response.data);
+      const apiData = response.data.data;
+      // Map API response to expected format
+      const mappedStatus = {
+        hasPassword: apiData.hasPassword,
+        canSetPassword: apiData.canSetPassword,
+        requiresCurrentPassword: apiData.requiresCurrentPassword,
+        authType: apiData.isGoogleUser ? 'google' : 'local'
+      };
+      setPasswordStatus(mappedStatus);
     } catch (error) {
       console.error('Failed to fetch password status:', error);
       // Fallback to basic status based on user provider
       const isGoogleUser = user?.provider === 'google';
       const hasExistingPassword = !!user?.password;
       
-
       
-      setPasswordStatus({
+      const fallbackStatus = {
         hasPassword: hasExistingPassword,
-        canSetPassword: isGoogleUser,
+        canSetPassword: isGoogleUser || hasExistingPassword, // Google users can set password, local users can change password
         requiresCurrentPassword: hasExistingPassword, // Only require current password if user actually has one
         authType: isGoogleUser ? 'google' : 'local'
-      });
+      };
+      
+      setPasswordStatus(fallbackStatus);
     }
   };
 
@@ -112,24 +121,40 @@ export default function ProfilePage() {
       let avatarUrl = avatar;
 
       if (customAvatar) {
-        const { data: sig } = await api.get('/api/cloudinary/signature');
-        const formData = new FormData();
-        formData.append('file', customAvatar);
-        formData.append('api_key', sig.api_key);
-        formData.append('timestamp', sig.timestamp.toString());
-        formData.append('signature', sig.signature);
-        formData.append('folder', sig.folder);
-        formData.append('upload_preset', sig.upload_preset);
+        console.log('🔍 Compressing and converting avatar to base64...');
+        
+        // Check file size (5MB limit)
+        if (customAvatar.size > 5 * 1024 * 1024) {
+          showNotification('error', 'File Too Large', 'Please select an image smaller than 5MB.');
+          setLoadingSave(false);
+          return;
+        }
 
-        const cloudRes = await fetch(
-          `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
-          { method: 'POST', body: formData }
-        );
-
-        const cloudData = await cloudRes.json();
-        if (!cloudRes.ok) throw new Error(cloudData.error?.message || 'Cloudinary upload failed');
-        avatarUrl = cloudData.secure_url;
+        // Compress and convert to base64
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        
+        avatarUrl = await new Promise((resolve, reject) => {
+          img.onload = () => {
+            // Set canvas size (max 200x200 for compression)
+            const maxSize = 200;
+            const ratio = Math.min(maxSize / img.width, maxSize / img.height);
+            canvas.width = img.width * ratio;
+            canvas.height = img.height * ratio;
+            
+            // Draw and compress
+            ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7); // 70% quality
+            resolve(compressedDataUrl);
+          };
+          img.onerror = () => reject(new Error('Failed to load image'));
+          img.src = URL.createObjectURL(customAvatar);
+        });
+        
         setAvatar(avatarUrl);
+        setCustomAvatar(null); // Clear custom avatar after save
+        console.log('✅ Avatar compressed and converted to base64');
       }
 
       await api.put('/api/user/profile', { name, avatar: avatarUrl, theme: localTheme }, {
@@ -223,7 +248,7 @@ export default function ProfilePage() {
 
   const displayAvatar = customAvatar
     ? URL.createObjectURL(customAvatar)
-    : avatar.startsWith('http')
+    : avatar.startsWith('data:') || avatar.startsWith('http')
     ? avatar
     : `/images/${avatar || 'default-avatar.png'}`;
 
@@ -330,13 +355,12 @@ export default function ProfilePage() {
         </div>
 
         <div className="flex flex-col items-center mb-6">
-          <Image
+          <img
             src={displayAvatar}
             alt="User Avatar"
             width={120}
             height={120}
             className="rounded-full border-4 border-purple-500 mb-4 object-cover shadow-lg"
-            priority
           />
           <div className="relative text-center">
             <input
@@ -354,9 +378,14 @@ export default function ProfilePage() {
               Change Avatar
             </label>
             {customAvatar && (
-              <p className="text-sm text-gray-600 mt-2">
-                Selected: <span className="font-medium">{customAvatar.name}</span>
-              </p>
+              <div className="text-sm text-gray-600 mt-2 space-y-1">
+                <p>Selected: <span className="font-medium">{customAvatar.name}</span></p>
+                <p>Size: <span className="font-medium">{(customAvatar.size / 1024 / 1024).toFixed(2)} MB</span>
+                  {customAvatar.size > 1024 * 1024 && (
+                    <span className="text-orange-600 ml-2">(will be compressed)</span>
+                  )}
+                </p>
+              </div>
             )}
           </div>
         </div>
@@ -431,9 +460,12 @@ export default function ProfilePage() {
             </div>
           )}
 
-          {/* Password Form */}
-          <div className="space-y-3">
-            {passwordStatus?.requiresCurrentPassword && (
+          {/* Password Form - Only show if user can set password or has existing password */}
+          {(() => {
+            return passwordStatus?.canSetPassword || passwordStatus?.hasPassword;
+          })() && (
+            <div className="space-y-3">
+              {passwordStatus?.requiresCurrentPassword && (
               <div className="relative">
                 <input
                   type={showCurrentPassword ? 'text' : 'password'}
@@ -509,7 +541,8 @@ export default function ProfilePage() {
                 </>
               )}
             </button>
-          </div>
+            </div>
+          )}
         </div>
 
         <button

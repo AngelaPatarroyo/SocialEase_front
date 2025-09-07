@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff } from 'lucide-react';
@@ -51,7 +50,13 @@ export default function LoginPage() {
       await login(email, password);
       
       const userData = localStorage.getItem('user');
-      const user = userData ? JSON.parse(userData) : null;
+      let user = null;
+      try {
+        user = userData && userData !== 'undefined' && userData !== 'null' ? JSON.parse(userData) : null;
+      } catch (error) {
+        console.warn('Failed to parse user data from localStorage:', error);
+        user = null;
+      }
 
       if (user) {
         // Show beautiful success notification
@@ -60,6 +65,9 @@ export default function LoginPage() {
       }
     } catch (err: any) {
       console.error('🔥 Login error:', err);
+      console.error('🔥 Error response:', err?.response?.data);
+      console.error('🔥 Error status:', err?.response?.status);
+      
       const errorMessage = err?.response?.data?.message ||
         err?.response?.data?.error ||
         err?.message ||
@@ -82,7 +90,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-white dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 px-4 transition-colors">
       <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl px-6 sm:px-8 md:px-10 pt-16 pb-8 w-full max-w-md text-center border border-gray-100 dark:border-gray-700 relative">
         <div className="flex justify-center mb-6">
-          <Image src="/images/actualogo.png" alt="SocialEase Logo" width={140} height={140} priority />
+          <img src="/images/actualogo.png" alt="SocialEase Logo" width={140} height={140} className="h-auto" />
         </div>
 
                             <div className="flex flex-col items-center mb-4">
@@ -96,7 +104,7 @@ export default function LoginPage() {
                         <div className="absolute left-1/2 transform -translate-x-1/2 top-full w-4 h-4 bg-white dark:bg-gray-700 border-l border-b border-gray-200 dark:border-gray-600 rotate-45" />
                       </motion.div>
                       <motion.div initial={{ y: -8 }} animate={{ y: 0 }} transition={{ duration: 1.2, ease: 'easeOut' }}>
-                        <Image src="/images/easy-blob.png" alt="Easy Blob" width={200} height={200} className="drop-shadow-xl" />
+                        <img src="/images/easy-blob.png" alt="Easy Blob" width={200} height={200} className="drop-shadow-xl" />
                       </motion.div>
                     </div>
 
@@ -156,7 +164,7 @@ export default function LoginPage() {
           disabled={googleLoading}
           className="w-full flex items-center justify-center gap-3 border border-gray-300 dark:border-gray-600 rounded-lg py-3 font-semibold text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-60"
         >
-          <Image src="/images/google-icon.png" alt="Google" width={20} height={20} />
+          <img src="/images/google-icon.png" alt="Google" width={20} height={20} />
           {googleLoading ? 'Redirecting…' : 'Sign in with Google'}
         </button>
 

@@ -9,6 +9,7 @@ import React, {
   ReactNode,
 } from 'react';
 import api from '@/utils/api';
+import { validateJWTToken, getValidToken } from '@/utils/jwt';
 
 interface Goal {
   title: string;
@@ -64,12 +65,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchProfile = useCallback(async (jwt: string) => {
     try {
+      // Validate JWT token before making API call
+      const tokenValidation = validateJWTToken(jwt);
+      
+      if (!tokenValidation.isValid) {
+        console.warn('Invalid or expired token detected:', tokenValidation.error);
+        logout();
+        return;
+      }
+
       const res = await api.get('/api/user/profile', {
         headers: { Authorization: `Bearer ${jwt}` },
       });
 
       const storedUser = localStorage.getItem('user');
-      const provider = storedUser ? JSON.parse(storedUser).provider : undefined;
+      let provider = undefined;
+      try {
+        provider = storedUser && storedUser !== 'undefined' && storedUser !== 'null' ? JSON.parse(storedUser).provider : undefined;
+      } catch (error) {
+        console.warn('Failed to parse user data from localStorage in AuthContext:', error);
+        provider = undefined;
+      }
 
       const fullUser = {
         ...res.data.data,
@@ -97,7 +113,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [fetchProfile, token]);
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('token');
     const loginErrorFlag = sessionStorage.getItem('login-error');
 
     if (loginErrorFlag) {
@@ -106,22 +121,44 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    if (storedToken) {
-      setToken(storedToken);
-      fetchProfile(storedToken);
+    // Get and validate token from localStorage
+    const validToken = getValidToken();
+    
+    if (validToken) {
+      setToken(validToken);
+      fetchProfile(validToken);
     } else {
       setLoading(false);
     }
   }, [fetchProfile]);
 
   const login = async (email: string, password: string) => {
-    const res = await api.post('/api/auth/login', { email, password });
-    const { token, user } = res.data;
-    setToken(token);
-    setUser(user);
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(user));
-    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    console.log('🔐 Attempting login for:', email);
+    try {
+      const res = await api.post('/api/auth/login', { email, password });
+      console.log('🔐 Login response:', res.data);
+      console.log('🔐 Response status:', res.status);
+      console.log('🔐 Response data structure:', JSON.stringify(res.data, null, 2));
+      
+      if (!res.data.success) {
+        console.error('🔐 Login failed - not successful:', res.data);
+        throw new Error(res.data.message || 'Login failed');
+      }
+      
+      // Extract token and user from the correct response structure
+      // Backend returns: { success: true, message: "...", data: { token: "...", user: {...} } }
+      const { token, user } = res.data.data;
+      
+      setToken(token);
+      setUser(user);
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    } catch (error) {
+      console.error('🔐 Login error in AuthContext:', error);
+      console.error('🔐 Error details:', error.response?.data);
+      throw error;
+    }
   };
 
   const register = async (name: string, email: string, password: string) => {

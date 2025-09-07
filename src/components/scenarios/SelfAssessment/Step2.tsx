@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 
 export default function Step2({ onNext }: { onNext: (confidence: number) => void }) {
-  const [confidence, setConfidence] = useState(5);
+  const [confidence, setConfidence] = useState(1);
   const [hoveredValue, setHoveredValue] = useState<number | null>(null);
 
   const getConfidenceLabel = (value: number) => {

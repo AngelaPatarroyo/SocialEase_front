@@ -2,7 +2,6 @@
 
 import { motion } from 'framer-motion';
 import ScenarioCard, { ScenarioCardProps } from '@/components/scenarios/ScenarioCard';
-import Image from 'next/image';
 import Link from 'next/link';
 
 const scenarios: ScenarioCardProps[] = [
@@ -206,7 +205,7 @@ export default function ScenariosPage() {
           transition={{ duration: 1.3 }}
           className="mt-3"
         >
-          <Image
+          <img
             src="/images/chatter-blob.png"
             alt="Friendly Blob"
             width={160}

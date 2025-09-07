@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import api from '@/utils/api';
 import type { AdminUser, UserFeedback, AdminScenario, AdminStats } from '@/types/admin';
 

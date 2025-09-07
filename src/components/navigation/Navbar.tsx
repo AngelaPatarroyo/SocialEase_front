@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useTheme } from '@/context/ThemeContext';
 
@@ -13,12 +12,12 @@ export default function Navbar() {
     <header className="w-full h-16 px-4 flex justify-between items-center fixed top-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md shadow-md z-50 border-b border-gray-200 dark:border-gray-700">
       {/* Logo */}
       <Link href="/" className="flex items-center">
-        <Image
+        <img
           src="/images/actualogo.png"
           alt="SocialEase Logo"
           width={140}
           height={70}
-          priority
+          className="h-auto"
         />
       </Link>
 

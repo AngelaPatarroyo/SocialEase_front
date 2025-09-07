@@ -1,8 +1,6 @@
 'use client';
 
-import React from 'react';
 import { motion } from 'framer-motion';
-import Image from 'next/image';
 import Link from 'next/link';
 
 export interface ScenarioCardProps {
@@ -43,13 +41,10 @@ export default function ScenarioCard({
         {/* Image container */}
         <div className="px-3 pt-3">
           <div className="relative w-full h-44 md:h-48 rounded-xl overflow-hidden">
-            <Image
+            <img
               src={imageUrl}
               alt={title}
-              fill
-              sizes="(max-width: 768px) 90vw, 300px"
-              className="rounded-xl object-cover"
-              quality={90}
+              className="w-full h-full rounded-xl object-cover"
             />
             {isVR && (
               <span className="absolute top-2 right-2 bg-purple-600 text-white text-xs px-2 py-1 rounded-full shadow-sm z-10">

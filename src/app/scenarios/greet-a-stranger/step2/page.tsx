@@ -73,30 +73,30 @@ const voiceMap: Record<number, string> = {
 const replyVoiceMap: Record<string, string> = {
   '1-0': '/audio/lucky-timing.mp3',
   '1-1': '/audio/machine-slow.mp3',
-  '1-2': '',
+  '1-2': '/audio/hmm.mp3', // Added for "I'm just here for water" response
 
   '2-0': '/audio/welcome.mp3',
-  '2-1': '',
+  '2-1': '/audio/hmm.mp3', // Added for "I usually keep to myself" response
   '2-2': '/audio/makes-sense.mp3',
 
   '3-0': '/audio/nice-to-meet-you.mp3',
   '3-1': '/audio/catch-you-later.mp3',
-  '3-2': '',
+  '3-2': '/audio/hmm.mp3', // Added for "Oh, I'm… uh..." response
 
   '4-0': '/audio/awesome-looking-forward.mp3',
   '4-1': '/audio/no-pressure.mp3',
   '4-2': '/audio/totally-fine.mp3',
 
-  '5-0': '',
-  '5-1': '',
+  '5-0': '/audio/hmm.mp3', // Added for "Definitely" response
+  '5-1': '/audio/hmm.mp3', // Added for "Yeah, maybe" response
   '5-2': '/audio/take-care.mp3',
 };
 
 // ===== Timing knobs =====
-const PRE_PROMPT_DELAY_MS = 600;   // pause before each prompt voice
-const PRE_REPLY_DELAY_MS  = 1200;  // pause before reply voice (user reads first)
-const POST_REPLY_EXTRA_MS = 600;   // extra pause after reply audio
-const MAX_REPLY_FALLBACK  = 2600;  // fallback max wait if audio has no duration
+const PRE_PROMPT_DELAY_MS = 400;   // pause before each prompt voice
+const PRE_REPLY_DELAY_MS  = 800;   // pause before reply voice (user reads first)
+const POST_REPLY_EXTRA_MS = 400;   // extra pause after reply audio
+const MAX_REPLY_FALLBACK  = 2000;  // fallback max wait if audio has no duration
 
 export default function Step2Conversation() {
   const [turn, setTurn] = useState(0);
